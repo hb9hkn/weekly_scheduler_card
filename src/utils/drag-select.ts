@@ -149,18 +149,21 @@ export function getCellFromEvent(
   if (dayIndex < 0 || dayIndex >= 7) return null;
 
   // Account for header row and scroll position
-  const headerHeight = 30;
-  const gap = 1; // CSS grid gap
+  // Header is 36px + 1px gap after it = 37px before first content row
+  const headerHeight = 36;
+  const gap = 1;
+  const headerWithGap = headerHeight + gap;
+
   // Add scroll offset to get position in full content, not just visible area
-  const gridY = y - headerHeight + gridElement.scrollTop;
+  const gridY = y - headerWithGap + gridElement.scrollTop;
 
   if (gridY < 0) return null;
 
   // Calculate row (slot) - 48 rows
-  // Total content height = 48 rows + 48 gaps (including gap after header)
-  // Each row unit = rowHeight + gap
-  const totalContentHeight = gridElement.scrollHeight - headerHeight;
-  const rowUnit = totalContentHeight / 48; // Each slot takes rowHeight + gap
+  // Content area = scrollHeight - header - headerGap
+  // Each row unit = (content area) / 48
+  const contentHeight = gridElement.scrollHeight - headerWithGap;
+  const rowUnit = contentHeight / 48;
   const slot = Math.floor(gridY / rowUnit);
 
   if (slot < 0 || slot >= 48) return null;

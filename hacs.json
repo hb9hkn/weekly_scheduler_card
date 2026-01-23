@@ -1,5 +1,5 @@
 {
   "name": "Weekly Scheduler Card",
   "render_readme": true,
-  "filename": "weekly-scheduler-card.js"
+  "filename": "dist/weekly-scheduler-card.js"
 }

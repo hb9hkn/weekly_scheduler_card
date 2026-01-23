@@ -16,7 +16,7 @@ A Lovelace card for Home Assistant that provides an Outlook-style weekly calenda
 ## Prerequisites
 
 This card requires the **Weekly Scheduler** integration to be installed:
-**[Weekly Scheduler Integration](https://github.com/your-repo/weekly_scheduler)**
+**[Weekly Scheduler Integration](https://github.com/hb9hkn/weekly_scheduler)**
 
 ## Installation
 

@@ -5,7 +5,7 @@ import terser from '@rollup/plugin-terser';
 export default {
   input: 'src/weekly-scheduler-card.ts',
   output: {
-    file: 'dist/weekly-scheduler-card.js',
+    file: 'weekly-scheduler-card.js',
     format: 'iife',
     sourcemap: false,
   },

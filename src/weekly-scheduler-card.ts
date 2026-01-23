@@ -45,18 +45,20 @@ export class WeeklySchedulerCard extends LitElement {
   static styles = css`
     :host {
       display: block;
+      --card-bg: #ffffff;
+      --text-primary: #37474f;
+      --text-secondary: #78909c;
+      --accent-color: #5c9ece;
+      --success-color: #66bb6a;
+      --disabled-color: #b0bec5;
+      --shadow-color: rgba(0, 0, 0, 0.1);
     }
 
     .card {
-      padding: 16px;
-      background: var(--ha-card-background, var(--card-background-color, white));
-      border-radius: var(--ha-card-border-radius, 4px);
-      box-shadow: var(
-        --ha-card-box-shadow,
-        0 2px 2px 0 rgba(0, 0, 0, 0.14),
-        0 1px 5px 0 rgba(0, 0, 0, 0.12),
-        0 3px 1px -2px rgba(0, 0, 0, 0.2)
-      );
+      padding: 20px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px var(--shadow-color);
     }
 
     .header {
@@ -64,43 +66,52 @@ export class WeeklySchedulerCard extends LitElement {
       align-items: center;
       justify-content: space-between;
       margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
     }
 
     .title {
       font-size: 18px;
-      font-weight: 500;
-      color: var(--primary-text-color);
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.3px;
     }
 
     .status {
-      font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 12px;
-      background: var(--success-color, #4caf50);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 16px;
+      background: var(--success-color);
       color: white;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .status.disabled {
-      background: var(--disabled-color, #9e9e9e);
+      background: var(--disabled-color);
     }
 
     .error {
-      padding: 16px;
-      color: var(--error-color, #f44336);
+      padding: 20px;
+      color: #e57373;
       text-align: center;
+      font-weight: 500;
     }
 
     .current-block {
-      margin-top: 12px;
-      padding: 8px 12px;
-      background: var(--secondary-background-color, #f5f5f5);
-      border-radius: 4px;
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: #f5f7f9;
+      border-radius: 8px;
       font-size: 12px;
-      color: var(--secondary-text-color);
+      color: var(--text-secondary);
+      border-left: 3px solid var(--accent-color);
     }
 
     .current-block strong {
-      color: var(--primary-text-color);
+      color: var(--text-primary);
+      font-weight: 600;
     }
   `;
 

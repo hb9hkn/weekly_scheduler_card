@@ -57,38 +57,43 @@ export class ScheduleGrid extends LitElement {
   static styles = css`
     :host {
       display: block;
-      --grid-bg: var(--card-background-color, #fff);
-      --grid-border: var(--divider-color, #e0e0e0);
-      --cell-active: var(--primary-color, #03a9f4);
-      --cell-hover: var(--secondary-background-color, #f5f5f5);
-      --cell-selected: rgba(3, 169, 244, 0.3);
-      --now-indicator: var(--error-color, #f44336);
-      --text-primary: var(--primary-text-color, #212121);
-      --text-secondary: var(--secondary-text-color, #757575);
+      --grid-bg: #fafafa;
+      --grid-border: #e8e8e8;
+      --header-bg: #f0f0f0;
+      --cell-active: #5c9ece;
+      --cell-hover: #f0f4f8;
+      --cell-selected: rgba(92, 158, 206, 0.25);
+      --now-indicator: #e57373;
+      --text-primary: #37474f;
+      --text-secondary: #78909c;
+      --shadow-color: rgba(0, 0, 0, 0.08);
     }
 
     .grid-container {
       display: grid;
       grid-template-columns: 50px repeat(7, 1fr);
-      grid-template-rows: 30px repeat(48, minmax(14px, 1fr));
+      grid-template-rows: 36px repeat(48, minmax(14px, 1fr));
       gap: 1px;
       background: var(--grid-border);
       border: 1px solid var(--grid-border);
-      border-radius: 4px;
+      border-radius: 8px;
       overflow-y: auto;
       overflow-x: hidden;
       min-height: 600px;
       max-height: 80vh;
       user-select: none;
+      box-shadow: 0 2px 8px var(--shadow-color);
     }
 
     .header-cell {
-      background: var(--grid-bg);
+      background: var(--header-bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 500;
-      font-size: 12px;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       color: var(--text-primary);
       position: sticky;
       top: 0;
@@ -105,24 +110,26 @@ export class ScheduleGrid extends LitElement {
       display: flex;
       align-items: flex-start;
       justify-content: center;
-      font-size: 10px;
+      font-size: 9px;
       color: var(--text-secondary);
-      padding-top: 2px;
+      padding-top: 3px;
       position: sticky;
       left: 0;
       z-index: 1;
       min-height: 14px;
+      font-family: system-ui, -apple-system, sans-serif;
     }
 
     .time-label.even-hour {
-      font-weight: 500;
+      font-weight: 600;
+      color: var(--text-primary);
     }
 
     .cell {
       background: var(--grid-bg);
       position: relative;
       cursor: pointer;
-      transition: background-color 0.1s;
+      transition: background-color 0.15s ease;
       min-height: 12px;
     }
 
@@ -135,15 +142,15 @@ export class ScheduleGrid extends LitElement {
     }
 
     .cell.active.intensity-low {
-      opacity: 0.4;
+      background: #a5c9e2;
     }
 
     .cell.active.intensity-medium {
-      opacity: 0.7;
+      background: #7ab3d6;
     }
 
     .cell.active.intensity-high {
-      opacity: 1;
+      background: var(--cell-active);
     }
 
     .cell.selected {
@@ -162,10 +169,11 @@ export class ScheduleGrid extends LitElement {
       background: var(--now-indicator);
       z-index: 3;
       pointer-events: none;
+      box-shadow: 0 0 4px var(--now-indicator);
     }
 
     .corner-cell {
-      background: var(--grid-bg);
+      background: var(--header-bg);
       position: sticky;
       top: 0;
       left: 0;
@@ -179,8 +187,9 @@ export class ScheduleGrid extends LitElement {
       transform: translate(-50%, -50%);
       font-size: 8px;
       color: white;
-      font-weight: 500;
+      font-weight: 600;
       pointer-events: none;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     /* Touch improvements */

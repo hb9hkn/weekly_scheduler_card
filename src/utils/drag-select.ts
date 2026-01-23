@@ -150,17 +150,18 @@ export function getCellFromEvent(
 
   // Account for header row and scroll position
   const headerHeight = 30;
+  const gap = 1; // CSS grid gap
   // Add scroll offset to get position in full content, not just visible area
   const gridY = y - headerHeight + gridElement.scrollTop;
 
   if (gridY < 0) return null;
 
   // Calculate row (slot) - 48 rows
-  // Use scrollHeight (full content height) instead of rect.height (visible height)
-  // Subtract 1px gaps between rows (48 gaps for 48 rows after header)
-  const contentHeight = gridElement.scrollHeight - headerHeight - 48;
-  const rowHeight = contentHeight / 48;
-  const slot = Math.floor(gridY / rowHeight);
+  // Total content height = 48 rows + 48 gaps (including gap after header)
+  // Each row unit = rowHeight + gap
+  const totalContentHeight = gridElement.scrollHeight - headerHeight;
+  const rowUnit = totalContentHeight / 48; // Each slot takes rowHeight + gap
+  const slot = Math.floor(gridY / rowUnit);
 
   if (slot < 0 || slot >= 48) return null;
 

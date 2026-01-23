@@ -20,25 +20,30 @@ export class ScheduleToolbar extends LitElement {
   static styles = css`
     :host {
       display: block;
-      --toolbar-bg: var(--card-background-color, #fff);
-      --toolbar-border: var(--divider-color, #e0e0e0);
-      --btn-bg: var(--primary-color, #03a9f4);
+      --toolbar-bg: #f5f5f5;
+      --toolbar-border: #e0e0e0;
+      --btn-bg: #5c9ece;
       --btn-text: white;
-      --btn-hover: var(--primary-color, #0288d1);
-      --text-primary: var(--primary-text-color, #212121);
-      --text-secondary: var(--secondary-text-color, #757575);
+      --btn-hover: #4a8ab8;
+      --btn-secondary-bg: #e8e8e8;
+      --btn-secondary-hover: #d0d0d0;
+      --text-primary: #37474f;
+      --text-secondary: #78909c;
+      --input-bg: #ffffff;
+      --shadow-color: rgba(0, 0, 0, 0.06);
     }
 
     .toolbar {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      padding: 12px;
+      padding: 14px 16px;
       background: var(--toolbar-bg);
       border: 1px solid var(--toolbar-border);
-      border-radius: 4px;
+      border-radius: 8px;
       margin-bottom: 12px;
       align-items: center;
+      box-shadow: 0 1px 4px var(--shadow-color);
     }
 
     .section {
@@ -49,28 +54,40 @@ export class ScheduleToolbar extends LitElement {
 
     .section-label {
       font-size: 12px;
+      font-weight: 500;
       color: var(--text-secondary);
       white-space: nowrap;
     }
 
     .day-select {
-      padding: 6px 10px;
+      padding: 7px 12px;
       border: 1px solid var(--toolbar-border);
-      border-radius: 4px;
-      font-size: 14px;
-      background: var(--toolbar-bg);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--input-bg);
       color: var(--text-primary);
       cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .day-select:focus {
+      outline: none;
+      border-color: var(--btn-bg);
     }
 
     .btn {
-      padding: 6px 12px;
+      padding: 7px 14px;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
       font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
-      transition: background-color 0.2s, opacity 0.2s;
+      transition: background-color 0.2s, transform 0.1s;
       white-space: nowrap;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
     }
 
     .btn-primary {
@@ -83,13 +100,12 @@ export class ScheduleToolbar extends LitElement {
     }
 
     .btn-secondary {
-      background: var(--toolbar-border);
+      background: var(--btn-secondary-bg);
       color: var(--text-primary);
     }
 
     .btn-secondary:hover {
-      background: var(--text-secondary);
-      color: white;
+      background: var(--btn-secondary-hover);
     }
 
     .btn:disabled {
@@ -99,11 +115,19 @@ export class ScheduleToolbar extends LitElement {
 
     .value-input {
       width: 60px;
-      padding: 6px 10px;
+      padding: 7px 10px;
       border: 1px solid var(--toolbar-border);
-      border-radius: 4px;
-      font-size: 14px;
+      border-radius: 6px;
+      font-size: 13px;
       text-align: center;
+      background: var(--input-bg);
+      color: var(--text-primary);
+      transition: border-color 0.2s;
+    }
+
+    .value-input:focus {
+      outline: none;
+      border-color: var(--btn-bg);
     }
 
     .enable-toggle {
@@ -114,8 +138,8 @@ export class ScheduleToolbar extends LitElement {
 
     .toggle-switch {
       position: relative;
-      width: 40px;
-      height: 20px;
+      width: 42px;
+      height: 22px;
     }
 
     .toggle-switch input {
@@ -131,21 +155,22 @@ export class ScheduleToolbar extends LitElement {
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: #ccc;
+      background-color: #bdbdbd;
       transition: 0.3s;
-      border-radius: 20px;
+      border-radius: 22px;
     }
 
     .toggle-slider:before {
       position: absolute;
       content: '';
-      height: 16px;
-      width: 16px;
+      height: 18px;
+      width: 18px;
       left: 2px;
       bottom: 2px;
       background-color: white;
       transition: 0.3s;
       border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
     .toggle-switch input:checked + .toggle-slider {
@@ -160,6 +185,7 @@ export class ScheduleToolbar extends LitElement {
       font-size: 11px;
       color: var(--text-secondary);
       margin-left: auto;
+      font-style: italic;
     }
 
     .divider {

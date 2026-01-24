@@ -4,7 +4,7 @@
  */
 
 import { LitElement, html, css, PropertyValues } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import {
   WeeklySchedule,
   DayName,
@@ -30,7 +30,6 @@ import {
   restoreTextSelection,
 } from '../utils/drag-select';
 
-@customElement('schedule-grid')
 export class ScheduleGrid extends LitElement {
   @property({ type: Object }) schedule: WeeklySchedule = {
     monday: [],

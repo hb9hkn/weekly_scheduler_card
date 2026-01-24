@@ -3,10 +3,9 @@
  */
 
 import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { DayName, DAYS, DAY_LABELS } from '../types';
 
-@customElement('schedule-toolbar')
 export class ScheduleToolbar extends LitElement {
   @property({ type: Boolean }) enabled = true;
   @property({ type: String }) helperType: 'input_number' | 'input_boolean' =

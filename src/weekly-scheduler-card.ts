@@ -1,12 +1,12 @@
 /**
  * Weekly Scheduler Card - Main Lovelace card component
- * @version 0.2.1
+ * @version 0.2.2
  */
 
-export const CARD_VERSION = '0.2.1';
+export const CARD_VERSION = '0.2.2';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import {
   HomeAssistant,
   CardConfig,
@@ -48,7 +48,6 @@ function getScheduleEntityId(helperEntity: string): string {
   return `switch.weekly_schedule_${helperName}`;
 }
 
-@customElement('weekly-scheduler-card')
 export class WeeklySchedulerCard extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ type: Object }) config?: CardConfig;
@@ -503,7 +502,6 @@ export class WeeklySchedulerCard extends LitElement {
 }
 
 // Simple config editor
-@customElement('weekly-scheduler-card-editor')
 export class WeeklySchedulerCardEditor extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ type: Object }) _config?: CardConfig;
@@ -563,26 +561,13 @@ export class WeeklySchedulerCardEditor extends LitElement {
    * Get all input_number and input_boolean entities.
    */
   private _getHelperEntities(): string[] {
-    if (!this.hass) {
-      console.log('[weekly-scheduler-card] _getHelperEntities: hass is undefined');
-      return [];
-    }
+    if (!this.hass) return [];
 
-    console.log('[weekly-scheduler-card] _getHelperEntities: hass.states =', this.hass.states);
-    console.log('[weekly-scheduler-card] _getHelperEntities: typeof hass.states =', typeof this.hass.states);
-
-    const allKeys = Object.keys(this.hass.states);
-    console.log('[weekly-scheduler-card] _getHelperEntities: all entity keys count =', allKeys.length);
-    console.log('[weekly-scheduler-card] _getHelperEntities: first 10 keys =', allKeys.slice(0, 10));
-
-    const filtered = allKeys.filter(
+    return Object.keys(this.hass.states).filter(
       (entityId) =>
         entityId.startsWith('input_number.') ||
         entityId.startsWith('input_boolean.')
-    );
-
-    console.log('[weekly-scheduler-card] _getHelperEntities: filtered helpers =', filtered);
-    return filtered.sort();
+    ).sort();
   }
 
   /**
@@ -650,17 +635,10 @@ export class WeeklySchedulerCardEditor extends LitElement {
   }
 
   render() {
-    console.log('[weekly-scheduler-card-editor] render: this.hass =', this.hass);
-    console.log('[weekly-scheduler-card-editor] render: this._config =', this._config);
-
-    if (!this.hass) {
-      console.log('[weekly-scheduler-card-editor] render: hass is falsy, returning empty');
-      return html``;
-    }
+    if (!this.hass) return html``;
 
     const helperEntities = this._getHelperEntities();
     const scheduleEntities = this._getScheduleEntities();
-    console.log('[weekly-scheduler-card-editor] render: helperEntities =', helperEntities);
 
     // Determine which mode we're in
     const isLegacyMode = !!this._config?.entity && !this._config?.helper_entity;

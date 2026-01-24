@@ -1,9 +1,9 @@
 /**
  * Weekly Scheduler Card - Main Lovelace card component
- * @version 0.1.4
+ * @version 0.2.0
  */
 
-export const CARD_VERSION = '0.1.4';
+export const CARD_VERSION = '0.2.0';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
@@ -40,6 +40,14 @@ console.info(
   'color: #3498db; background: white; font-weight: bold;'
 );
 
+/**
+ * Get the schedule switch entity ID for a helper entity.
+ */
+function getScheduleEntityId(helperEntity: string): string {
+  const helperName = helperEntity.split('.').pop() || '';
+  return `switch.weekly_schedule_${helperName}`;
+}
+
 @customElement('weekly-scheduler-card')
 export class WeeklySchedulerCard extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
@@ -51,6 +59,8 @@ export class WeeklySchedulerCard extends LitElement {
   @state() private _helperEntity: string = '';
   @state() private _currentValue: number = 50;
   @state() private _defaultValue: number = 50;
+  @state() private _scheduleEntity: string = '';
+  @state() private _isCreating: boolean = false;
 
   static styles = css`
     :host {
@@ -109,11 +119,70 @@ export class WeeklySchedulerCard extends LitElement {
       font-weight: 500;
     }
 
+    .create-schedule {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    .create-schedule-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+
+    .create-schedule-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .create-schedule-helper {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .create-schedule-helper strong {
+      color: var(--text-primary);
+    }
+
+    .create-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .create-button:hover {
+      background: #4a8bb8;
+    }
+
+    .create-button:disabled {
+      background: var(--disabled-color);
+      cursor: not-allowed;
+    }
+
+    .create-button ha-icon {
+      --mdc-icon-size: 20px;
+    }
   `;
 
   setConfig(config: CardConfig) {
-    if (!config.entity) {
-      throw new Error('Please define an entity');
+    // Support both old (entity) and new (helper_entity) config styles
+    if (!config.entity && !config.helper_entity) {
+      throw new Error('Please define a helper_entity or entity');
     }
     this.config = config;
   }
@@ -130,11 +199,50 @@ export class WeeklySchedulerCard extends LitElement {
     }
   }
 
-  private _updateFromEntity() {
-    if (!this.hass || !this.config?.entity) return;
+  /**
+   * Determine the schedule entity ID from config.
+   * - If config.entity is set (legacy), use it directly
+   * - If config.helper_entity is set (new), derive switch entity
+   */
+  private _getScheduleEntityId(): string {
+    if (this.config?.entity) {
+      return this.config.entity;
+    }
+    if (this.config?.helper_entity) {
+      return getScheduleEntityId(this.config.helper_entity);
+    }
+    return '';
+  }
 
-    const entity = this.hass.states[this.config.entity] as any;
-    if (!entity) return;
+  /**
+   * Check if the schedule entity exists.
+   */
+  private _scheduleExists(): boolean {
+    const entityId = this._getScheduleEntityId();
+    return entityId !== '' && this.hass?.states[entityId] !== undefined;
+  }
+
+  private _updateFromEntity() {
+    if (!this.hass || !this.config) return;
+
+    const scheduleEntityId = this._getScheduleEntityId();
+    this._scheduleEntity = scheduleEntityId;
+
+    const entity = this.hass.states[scheduleEntityId] as any;
+    if (!entity) {
+      // Schedule doesn't exist yet
+      // Get helper entity from config
+      if (this.config.helper_entity) {
+        this._helperEntity = this.config.helper_entity;
+        // Determine helper type from entity ID
+        if (this._helperEntity.startsWith('input_number.')) {
+          this._helperType = 'input_number';
+        } else if (this._helperEntity.startsWith('input_boolean.')) {
+          this._helperType = 'input_boolean';
+        }
+      }
+      return;
+    }
 
     const attrs = entity.attributes;
 
@@ -158,14 +266,36 @@ export class WeeklySchedulerCard extends LitElement {
     }
   }
 
+  private async _createSchedule() {
+    if (!this.hass || !this.config?.helper_entity) return;
+
+    this._isCreating = true;
+
+    try {
+      await this.hass.callService('weekly_scheduler', 'create_schedule', {
+        helper_entity: this.config.helper_entity,
+      });
+
+      // Wait a moment for the entity to be created
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Force update
+      this._updateFromEntity();
+    } catch (error) {
+      console.error('Failed to create schedule:', error);
+    } finally {
+      this._isCreating = false;
+    }
+  }
+
   private async _updateSchedule(schedule: WeeklySchedule) {
-    if (!this.hass || !this.config?.entity) return;
+    if (!this.hass || !this._scheduleEntity) return;
 
     this._schedule = schedule;
 
     try {
       await this.hass.callService('weekly_scheduler', 'set_schedule', {
-        entity_id: this.config.entity,
+        entity_id: this._scheduleEntity,
         schedule: schedule,
       });
     } catch (error) {
@@ -229,13 +359,13 @@ export class WeeklySchedulerCard extends LitElement {
   }
 
   private async _handleToggleEnabled(e: CustomEvent) {
-    if (!this.hass || !this.config?.entity) return;
+    if (!this.hass || !this._scheduleEntity) return;
 
     const { enabled } = e.detail;
 
     try {
       await this.hass.callService('switch', enabled ? 'turn_on' : 'turn_off', {
-        entity_id: this.config.entity,
+        entity_id: this._scheduleEntity,
       });
     } catch (error) {
       console.error('Failed to toggle schedule:', error);
@@ -244,6 +374,42 @@ export class WeeklySchedulerCard extends LitElement {
 
   private _handleValueChange(e: CustomEvent) {
     this._defaultValue = e.detail.value;
+  }
+
+  private _renderCreateSchedule() {
+    const helperEntity = this.config?.helper_entity || '';
+    const helperState = this.hass?.states[helperEntity];
+    const helperName = helperState?.attributes?.friendly_name || helperEntity;
+
+    return html`
+      <ha-card>
+        <div class="card">
+          <div class="header">
+            <div class="title">${this.config?.title || 'Weekly Schedule'}</div>
+          </div>
+
+          <div class="create-schedule">
+            <div class="create-schedule-icon">
+              <ha-icon icon="mdi:calendar-plus"></ha-icon>
+            </div>
+            <div class="create-schedule-helper">
+              Helper: <strong>${helperName}</strong>
+            </div>
+            <div class="create-schedule-text">
+              No schedule exists for this helper yet.
+            </div>
+            <button
+              class="create-button"
+              @click=${this._createSchedule}
+              ?disabled=${this._isCreating}
+            >
+              <ha-icon icon="mdi:plus"></ha-icon>
+              ${this._isCreating ? 'Creating...' : 'Create Schedule'}
+            </button>
+          </div>
+        </div>
+      </ha-card>
+    `;
   }
 
   render() {
@@ -255,10 +421,32 @@ export class WeeklySchedulerCard extends LitElement {
       return html`<div class="error">Home Assistant not available</div>`;
     }
 
-    const entity = this.hass.states[this.config.entity];
-    if (!entity) {
+    // Check if helper_entity is configured but helper doesn't exist
+    if (this.config.helper_entity) {
+      const helperExists = this.hass.states[this.config.helper_entity];
+      if (!helperExists) {
+        return html`<div class="error">
+          Helper entity not found: ${this.config.helper_entity}
+        </div>`;
+      }
+    }
+
+    // Check if schedule exists
+    if (!this._scheduleExists()) {
+      // Only show create button if using new helper_entity mode
+      if (this.config.helper_entity) {
+        return this._renderCreateSchedule();
+      }
+      // Legacy mode - entity must exist
       return html`<div class="error">
         Entity not found: ${this.config.entity}
+      </div>`;
+    }
+
+    const entity = this.hass.states[this._scheduleEntity];
+    if (!entity) {
+      return html`<div class="error">
+        Entity not found: ${this._scheduleEntity}
       </div>`;
     }
 
@@ -308,7 +496,7 @@ export class WeeklySchedulerCard extends LitElement {
 
   static getStubConfig() {
     return {
-      entity: '',
+      helper_entity: '',
       title: 'Weekly Schedule',
     };
   }
@@ -347,23 +535,97 @@ export class WeeklySchedulerCardEditor extends LitElement {
       border-radius: 4px;
       font-size: 14px;
     }
+
+    .helper-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .has-schedule {
+      color: var(--success-color, #66bb6a);
+      font-size: 11px;
+    }
+
+    .info-text {
+      font-size: 11px;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+      font-style: italic;
+    }
   `;
 
   setConfig(config: CardConfig) {
     this._config = config;
   }
 
+  /**
+   * Get all input_number and input_boolean entities.
+   */
+  private _getHelperEntities(): string[] {
+    if (!this.hass) return [];
+
+    return Object.keys(this.hass.states).filter(
+      (entityId) =>
+        entityId.startsWith('input_number.') ||
+        entityId.startsWith('input_boolean.')
+    ).sort();
+  }
+
+  /**
+   * Check if a helper entity already has a schedule.
+   */
+  private _hasSchedule(helperEntity: string): boolean {
+    if (!this.hass) return false;
+
+    const scheduleEntityId = getScheduleEntityId(helperEntity);
+    return this.hass.states[scheduleEntityId] !== undefined;
+  }
+
+  /**
+   * Get all existing schedule switch entities (for legacy support).
+   */
+  private _getScheduleEntities(): string[] {
+    if (!this.hass) return [];
+
+    return Object.keys(this.hass.states).filter(
+      (entityId) =>
+        entityId.startsWith('switch.') &&
+        (this.hass!.states[entityId] as any).attributes?.schedule !== undefined
+    );
+  }
+
   private _valueChanged(e: Event) {
     if (!this._config) return;
 
     const target = e.target as HTMLInputElement | HTMLSelectElement;
-    const newConfig = {
-      ...this._config,
-      [target.name]:
-        target.type === 'checkbox'
-          ? (target as HTMLInputElement).checked
-          : target.value,
-    };
+    let newConfig = { ...this._config };
+
+    if (target.name === 'helper_entity') {
+      // When helper_entity changes, clear entity (use new mode)
+      newConfig = {
+        ...newConfig,
+        helper_entity: target.value,
+        entity: undefined,
+      };
+    } else if (target.name === 'entity') {
+      // Legacy mode - selecting existing schedule entity
+      newConfig = {
+        ...newConfig,
+        entity: target.value,
+        helper_entity: undefined,
+      };
+    } else if (target.type === 'checkbox') {
+      newConfig = {
+        ...newConfig,
+        [target.name]: (target as HTMLInputElement).checked,
+      };
+    } else {
+      newConfig = {
+        ...newConfig,
+        [target.name]: target.value,
+      };
+    }
 
     this.dispatchEvent(
       new CustomEvent('config-changed', {
@@ -377,36 +639,67 @@ export class WeeklySchedulerCardEditor extends LitElement {
   render() {
     if (!this.hass) return html``;
 
-    // Filter entities to only show weekly_scheduler switches
-    const entities = Object.keys(this.hass.states).filter(
-      (entityId) =>
-        entityId.startsWith('switch.') &&
-        this.hass!.states[entityId].attributes.schedule !== undefined
-    );
+    const helperEntities = this._getHelperEntities();
+    const scheduleEntities = this._getScheduleEntities();
+
+    // Determine which mode we're in
+    const isLegacyMode = !!this._config?.entity && !this._config?.helper_entity;
 
     return html`
       <div class="editor">
         <div class="row">
-          <label>Entity</label>
+          <label>Helper Entity (Recommended)</label>
           <select
-            name="entity"
-            .value=${this._config?.entity || ''}
+            name="helper_entity"
+            .value=${this._config?.helper_entity || ''}
             @change=${this._valueChanged}
           >
-            <option value="">Select an entity...</option>
-            ${entities.map(
-              (entity) => html`
+            <option value="">Select a helper entity...</option>
+            ${helperEntities.map((entity) => {
+              const state = this.hass!.states[entity];
+              const name = state?.attributes?.friendly_name || entity;
+              const hasSchedule = this._hasSchedule(entity);
+              return html`
                 <option
                   value="${entity}"
-                  ?selected=${entity === this._config?.entity}
+                  ?selected=${entity === this._config?.helper_entity}
                 >
-                  ${this.hass!.states[entity].attributes.friendly_name ||
-                  entity}
+                  ${name} ${hasSchedule ? '(has schedule)' : ''}
                 </option>
-              `
-            )}
+              `;
+            })}
           </select>
+          <div class="info-text">
+            Select the input_number or input_boolean you want to schedule.
+            A schedule will be created automatically if it doesn't exist.
+          </div>
         </div>
+
+        ${scheduleEntities.length > 0
+          ? html`
+              <div class="row">
+                <label>Or select existing schedule (Legacy)</label>
+                <select
+                  name="entity"
+                  .value=${this._config?.entity || ''}
+                  @change=${this._valueChanged}
+                >
+                  <option value="">Select an existing schedule...</option>
+                  ${scheduleEntities.map(
+                    (entity) => html`
+                      <option
+                        value="${entity}"
+                        ?selected=${entity === this._config?.entity}
+                      >
+                        ${(this.hass!.states[entity] as any).attributes
+                          ?.friendly_name || entity}
+                      </option>
+                    `
+                  )}
+                </select>
+              </div>
+            `
+          : ''}
 
         <div class="row">
           <label>Title (optional)</label>

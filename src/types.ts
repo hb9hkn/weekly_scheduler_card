@@ -64,7 +64,8 @@ export interface SchedulerEntity {
 
 export interface CardConfig {
   type: string;
-  entity: string;
+  entity?: string; // The schedule switch entity (auto-derived from helper_entity)
+  helper_entity?: string; // The input_number or input_boolean to schedule
   title?: string;
   show_current_time?: boolean;
 }

@@ -563,13 +563,26 @@ export class WeeklySchedulerCardEditor extends LitElement {
    * Get all input_number and input_boolean entities.
    */
   private _getHelperEntities(): string[] {
-    if (!this.hass) return [];
+    if (!this.hass) {
+      console.log('[weekly-scheduler-card] _getHelperEntities: hass is undefined');
+      return [];
+    }
 
-    return Object.keys(this.hass.states).filter(
+    console.log('[weekly-scheduler-card] _getHelperEntities: hass.states =', this.hass.states);
+    console.log('[weekly-scheduler-card] _getHelperEntities: typeof hass.states =', typeof this.hass.states);
+
+    const allKeys = Object.keys(this.hass.states);
+    console.log('[weekly-scheduler-card] _getHelperEntities: all entity keys count =', allKeys.length);
+    console.log('[weekly-scheduler-card] _getHelperEntities: first 10 keys =', allKeys.slice(0, 10));
+
+    const filtered = allKeys.filter(
       (entityId) =>
         entityId.startsWith('input_number.') ||
         entityId.startsWith('input_boolean.')
-    ).sort();
+    );
+
+    console.log('[weekly-scheduler-card] _getHelperEntities: filtered helpers =', filtered);
+    return filtered.sort();
   }
 
   /**
@@ -637,10 +650,17 @@ export class WeeklySchedulerCardEditor extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    console.log('[weekly-scheduler-card-editor] render: this.hass =', this.hass);
+    console.log('[weekly-scheduler-card-editor] render: this._config =', this._config);
+
+    if (!this.hass) {
+      console.log('[weekly-scheduler-card-editor] render: hass is falsy, returning empty');
+      return html``;
+    }
 
     const helperEntities = this._getHelperEntities();
     const scheduleEntities = this._getScheduleEntities();
+    console.log('[weekly-scheduler-card-editor] render: helperEntities =', helperEntities);
 
     // Determine which mode we're in
     const isLegacyMode = !!this._config?.entity && !this._config?.helper_entity;

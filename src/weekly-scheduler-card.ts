@@ -1,9 +1,9 @@
 /**
  * Weekly Scheduler Card - Main Lovelace card component
- * @version 0.1.2
+ * @version 0.1.3
  */
 
-export const CARD_VERSION = '0.1.2';
+export const CARD_VERSION = '0.1.3';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
@@ -109,20 +109,6 @@ export class WeeklySchedulerCard extends LitElement {
       font-weight: 500;
     }
 
-    .current-block {
-      margin-top: 14px;
-      padding: 10px 14px;
-      background: #f5f7f9;
-      border-radius: 8px;
-      font-size: 12px;
-      color: var(--text-secondary);
-      border-left: 3px solid var(--accent-color);
-    }
-
-    .current-block strong {
-      color: var(--text-primary);
-      font-weight: 600;
-    }
   `;
 
   setConfig(config: CardConfig) {
@@ -274,8 +260,6 @@ export class WeeklySchedulerCard extends LitElement {
       entity.attributes.friendly_name ||
       'Weekly Schedule';
 
-    const currentBlock = (entity.attributes as any).current_timeblock;
-
     return html`
       <ha-card>
         <div class="card">
@@ -305,26 +289,6 @@ export class WeeklySchedulerCard extends LitElement {
             .defaultValue=${this._defaultValue}
             @selection-complete=${this._handleSelectionComplete}
           ></schedule-grid>
-
-          ${currentBlock && this.config.show_current_time !== false
-            ? html`
-                <div class="current-block">
-                  Current: <strong>${currentBlock.day}</strong> at
-                  <strong>${currentBlock.time}</strong>
-                  ${currentBlock.value !== null
-                    ? html` - Value:
-                        <strong
-                          >${this._helperType === 'input_boolean'
-                            ? currentBlock.value
-                              ? 'On'
-                              : 'Off'
-                            : currentBlock.value}</strong
-                        >`
-                    : ''}
-                  ${currentBlock.in_block ? '' : ' (in gap)'}
-                </div>
-              `
-            : ''}
         </div>
       </ha-card>
     `;
@@ -338,7 +302,6 @@ export class WeeklySchedulerCard extends LitElement {
     return {
       entity: '',
       title: 'Weekly Schedule',
-      show_current_time: true,
     };
   }
 }
@@ -446,18 +409,6 @@ export class WeeklySchedulerCardEditor extends LitElement {
             @input=${this._valueChanged}
             placeholder="Weekly Schedule"
           />
-        </div>
-
-        <div class="row">
-          <label>
-            <input
-              type="checkbox"
-              name="show_current_time"
-              .checked=${this._config?.show_current_time !== false}
-              @change=${this._valueChanged}
-            />
-            Show current time indicator
-          </label>
         </div>
       </div>
     `;

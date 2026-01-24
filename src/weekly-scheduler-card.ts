@@ -1,9 +1,9 @@
 /**
  * Weekly Scheduler Card - Main Lovelace card component
- * @version 0.1.3
+ * @version 0.1.4
  */
 
-export const CARD_VERSION = '0.1.3';
+export const CARD_VERSION = '0.1.4';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
@@ -210,6 +210,13 @@ export class WeeklySchedulerCard extends LitElement {
     await this._updateSchedule(newSchedule);
   }
 
+  private async _handleCopyToWeekend(e: CustomEvent) {
+    const { sourceDay } = e.detail;
+    const weekend: DayName[] = ['saturday', 'sunday'];
+    const newSchedule = copyDayToOthers(this._schedule, sourceDay, weekend);
+    await this._updateSchedule(newSchedule);
+  }
+
   private async _handleClearDay(e: CustomEvent) {
     const { day } = e.detail;
     const newSchedule = cloneSchedule(this._schedule);
@@ -277,6 +284,7 @@ export class WeeklySchedulerCard extends LitElement {
             .helperEntity=${this._helperEntity}
             @copy-to-all=${this._handleCopyToAll}
             @copy-to-workdays=${this._handleCopyToWorkdays}
+            @copy-to-weekend=${this._handleCopyToWeekend}
             @clear-day=${this._handleClearDay}
             @clear-all=${this._handleClearAll}
             @toggle-enabled=${this._handleToggleEnabled}

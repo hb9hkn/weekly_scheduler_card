@@ -235,6 +235,16 @@ export class ScheduleToolbar extends LitElement {
     );
   }
 
+  private _handleCopyToWeekend() {
+    this.dispatchEvent(
+      new CustomEvent('copy-to-weekend', {
+        detail: { sourceDay: this._selectedDay },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   private _handleClearDay() {
     this.dispatchEvent(
       new CustomEvent('clear-day', {
@@ -343,6 +353,9 @@ export class ScheduleToolbar extends LitElement {
           </button>
           <button class="btn btn-primary" @click=${this._handleCopyToWorkdays}>
             Copy to Workdays
+          </button>
+          <button class="btn btn-primary" @click=${this._handleCopyToWeekend}>
+            Copy to Weekend
           </button>
         </div>
 

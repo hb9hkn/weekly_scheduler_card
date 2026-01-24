@@ -1,9 +1,9 @@
 /**
  * Weekly Scheduler Card - Main Lovelace card component
- * @version 0.1.1
+ * @version 0.1.2
  */
 
-export const CARD_VERSION = '0.1.1';
+export const CARD_VERSION = '0.1.2';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';

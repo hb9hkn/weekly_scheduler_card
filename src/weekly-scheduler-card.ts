@@ -1,9 +1,9 @@
 /**
  * Weekly Scheduler Card - Main Lovelace card component
- * @version 0.2.5
+ * @version 0.2.6
  */
 
-export const CARD_VERSION = '0.2.5';
+export const CARD_VERSION = '0.2.6';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -767,10 +767,41 @@ declare global {
   }
 }
 
-// Explicitly register custom elements (backup for decorator issues)
-if (!customElements.get('weekly-scheduler-card')) {
-  customElements.define('weekly-scheduler-card', WeeklySchedulerCard);
-}
-if (!customElements.get('weekly-scheduler-card-editor')) {
-  customElements.define('weekly-scheduler-card-editor', WeeklySchedulerCardEditor);
+// Track registered version globally
+const REGISTERED_VERSION_KEY = '__weeklySchedulerCardVersion';
+const RELOAD_FLAG_KEY = 'weekly-scheduler-card-reloaded';
+
+const registeredVersion = (window as any)[REGISTERED_VERSION_KEY];
+
+if (registeredVersion && registeredVersion !== CARD_VERSION) {
+  // Version mismatch - old element registered, new code loaded
+  // Force reload to clear custom elements registry (but only once)
+  if (!sessionStorage.getItem(RELOAD_FLAG_KEY)) {
+    console.info(
+      `%c WEEKLY-SCHEDULER-CARD %c Version upgrade detected (${registeredVersion} → ${CARD_VERSION}), reloading...`,
+      'color: white; background: #e67e22; font-weight: bold;',
+      'color: #e67e22; background: white; font-weight: bold;'
+    );
+    sessionStorage.setItem(RELOAD_FLAG_KEY, 'true');
+    window.location.reload();
+  } else {
+    // Already reloaded once this session, don't loop
+    console.warn(
+      `Weekly Scheduler Card: Version mismatch persists after reload. Please clear browser cache and refresh.`
+    );
+    sessionStorage.removeItem(RELOAD_FLAG_KEY);
+  }
+} else {
+  // Clear reload flag on successful load
+  sessionStorage.removeItem(RELOAD_FLAG_KEY);
+
+  // Register elements and track version
+  if (!customElements.get('weekly-scheduler-card')) {
+    customElements.define('weekly-scheduler-card', WeeklySchedulerCard);
+  }
+  if (!customElements.get('weekly-scheduler-card-editor')) {
+    customElements.define('weekly-scheduler-card-editor', WeeklySchedulerCardEditor);
+  }
+
+  (window as any)[REGISTERED_VERSION_KEY] = CARD_VERSION;
 }

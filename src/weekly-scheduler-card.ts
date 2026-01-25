@@ -3,7 +3,7 @@
  * @version 0.3.4
  */
 
-export const CARD_VERSION = '0.3.5';
+export const CARD_VERSION = '0.4.0';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';

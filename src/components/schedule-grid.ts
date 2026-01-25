@@ -111,7 +111,8 @@ export class ScheduleGrid extends LitElement {
       justify-content: center;
       font-size: 9px;
       color: var(--text-secondary);
-      padding-top: 3px;
+      padding-top: 0;
+      margin-top: -5px;
       position: sticky;
       left: 0;
       z-index: 1;
@@ -192,11 +193,15 @@ export class ScheduleGrid extends LitElement {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 8px;
+      font-size: 7px;
       color: white;
       font-weight: 600;
       pointer-events: none;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90%;
     }
 
     /* Touch improvements */
@@ -345,6 +350,16 @@ export class ScheduleGrid extends LitElement {
     return 'intensity-high';
   }
 
+  private _formatValue(value: number): string {
+    // Format number for display: show decimals only if needed, max 1 decimal place
+    if (Number.isInteger(value)) {
+      return String(value);
+    }
+    // Round to 1 decimal place for display
+    const rounded = Math.round(value * 10) / 10;
+    return String(rounded);
+  }
+
   private _renderTimeLabel(slot: number) {
     const time = slotToTime(slot);
     const isEvenHour = slot % 4 === 0; // Every 2 hours (4 slots = 2 hours)
@@ -382,7 +397,7 @@ export class ScheduleGrid extends LitElement {
             ></div>`
           : ''}
         ${isActive && this.helperType === 'input_number' && typeof value === 'number'
-          ? html`<span class="cell-value">${Math.round(value)}</span>`
+          ? html`<span class="cell-value">${this._formatValue(value)}</span>`
           : ''}
         ${isActive && this.helperType === 'input_boolean' && typeof value === 'boolean'
           ? html`<span class="cell-value">${value ? 'ON' : 'OFF'}</span>`

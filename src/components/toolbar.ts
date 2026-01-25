@@ -113,7 +113,7 @@ export class ScheduleToolbar extends LitElement {
     }
 
     .value-input {
-      width: 60px;
+      width: 80px;
       padding: 7px 10px;
       border: 1px solid var(--toolbar-border);
       border-radius: 6px;
@@ -197,10 +197,14 @@ export class ScheduleToolbar extends LitElement {
       .toolbar {
         flex-direction: column;
         align-items: stretch;
+        padding: 12px;
+        gap: 10px;
       }
 
       .section {
         justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 6px;
       }
 
       .helper-info {
@@ -210,6 +214,49 @@ export class ScheduleToolbar extends LitElement {
 
       .divider {
         display: none;
+      }
+
+      .btn {
+        padding: 8px 10px;
+        font-size: 11px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .day-select {
+        flex: 1;
+        min-width: 80px;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .toolbar {
+        padding: 10px;
+        gap: 8px;
+      }
+
+      .section {
+        gap: 4px;
+      }
+
+      .section-label {
+        font-size: 11px;
+      }
+
+      .btn {
+        padding: 6px 8px;
+        font-size: 10px;
+      }
+
+      .value-input {
+        width: 65px;
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+
+      .day-select {
+        padding: 6px 8px;
+        font-size: 12px;
       }
     }
   `;
@@ -323,8 +370,7 @@ export class ScheduleToolbar extends LitElement {
                   .value=${String(this._inputValue)}
                   @input=${this._handleValueChange}
                   @change=${this._handleValueConfirm}
-                  min="0"
-                  max="100"
+                  step="any"
                 />
               </div>
               <div class="divider"></div>

@@ -1,9 +1,9 @@
 /**
  * Weekly Scheduler Card - Main Lovelace card component
- * @version 0.3.1
+ * @version 0.3.2
  */
 
-export const CARD_VERSION = '0.3.1';
+export const CARD_VERSION = '0.3.2';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -777,13 +777,21 @@ const REGISTERED_VERSION_KEY = '__weeklySchedulerCardVersion';
 const RELOAD_FLAG_KEY = 'weekly-scheduler-card-reloaded';
 
 const registeredVersion = (window as any)[REGISTERED_VERSION_KEY];
+const elementAlreadyDefined = customElements.get('weekly-scheduler-card');
 
-if (registeredVersion && registeredVersion !== CARD_VERSION) {
+// Detect version mismatch scenarios:
+// 1. Version variable exists but doesn't match current version
+// 2. Element is already defined but no version variable (old code without version tracking)
+const versionMismatch = registeredVersion && registeredVersion !== CARD_VERSION;
+const oldCodeDetected = elementAlreadyDefined && !registeredVersion;
+
+if (versionMismatch || oldCodeDetected) {
   // Version mismatch - old element registered, new code loaded
   // Force reload to clear custom elements registry (but only once)
   if (!sessionStorage.getItem(RELOAD_FLAG_KEY)) {
+    const oldVer = registeredVersion || 'unknown (pre-0.2.6)';
     console.info(
-      `%c WEEKLY-SCHEDULER-CARD %c Version upgrade detected (${registeredVersion} → ${CARD_VERSION}), reloading...`,
+      `%c WEEKLY-SCHEDULER-CARD %c Version upgrade detected (${oldVer} → ${CARD_VERSION}), reloading...`,
       'color: white; background: #e67e22; font-weight: bold;',
       'color: #e67e22; background: white; font-weight: bold;'
     );
@@ -792,7 +800,7 @@ if (registeredVersion && registeredVersion !== CARD_VERSION) {
   } else {
     // Already reloaded once this session, don't loop
     console.warn(
-      `Weekly Scheduler Card: Version mismatch persists after reload. Please clear browser cache and refresh.`
+      `Weekly Scheduler Card: Version mismatch persists after reload. Please clear browser cache and refresh (Ctrl+Shift+R).`
     );
     sessionStorage.removeItem(RELOAD_FLAG_KEY);
   }

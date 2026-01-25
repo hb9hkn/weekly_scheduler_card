@@ -1,9 +1,9 @@
 /**
  * Weekly Scheduler Card - Main Lovelace card component
- * @version 0.3.0
+ * @version 0.3.1
  */
 
-export const CARD_VERSION = '0.3.0';
+export const CARD_VERSION = '0.3.1';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -66,6 +66,7 @@ export class WeeklySchedulerCard extends LitElement {
   @state() private _helperEntity: string = '';
   @state() private _currentValue: number = 50;
   @state() private _defaultValue: number = 50;
+  @state() private _defaultBooleanValue: boolean = true;
   @state() private _scheduleEntity: string = '';
   @state() private _isCreating: boolean = false;
 
@@ -318,7 +319,7 @@ export class WeeklySchedulerCard extends LitElement {
     for (const day of days as DayName[]) {
       if (action === 'add') {
         const value =
-          this._helperType === 'input_boolean' ? true : this._defaultValue;
+          this._helperType === 'input_boolean' ? this._defaultBooleanValue : this._defaultValue;
         newSchedule = addTimeBlock(newSchedule, day, startSlot, endSlot, value);
       } else {
         newSchedule = removeTimeBlock(newSchedule, day, startSlot, endSlot);
@@ -380,7 +381,11 @@ export class WeeklySchedulerCard extends LitElement {
   }
 
   private _handleValueChange(e: CustomEvent) {
-    this._defaultValue = e.detail.value;
+    if (this._helperType === 'input_boolean') {
+      this._defaultBooleanValue = e.detail.value;
+    } else {
+      this._defaultValue = e.detail.value;
+    }
   }
 
   private _renderCreateSchedule() {

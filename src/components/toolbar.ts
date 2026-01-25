@@ -15,6 +15,7 @@ export class ScheduleToolbar extends LitElement {
 
   @state() private _selectedDay: DayName = 'monday';
   @state() private _inputValue: number = 50;
+  @state() private _booleanValue: boolean = true;
 
   static styles = css`
     :host {
@@ -288,6 +289,18 @@ export class ScheduleToolbar extends LitElement {
     );
   }
 
+  private _handleBooleanChange(e: Event) {
+    const select = e.target as HTMLSelectElement;
+    this._booleanValue = select.value === 'on';
+    this.dispatchEvent(
+      new CustomEvent('value-change', {
+        detail: { value: this._booleanValue },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   private _handleDayChange(e: Event) {
     const select = e.target as HTMLSelectElement;
     this._selectedDay = select.value as DayName;
@@ -312,7 +325,7 @@ export class ScheduleToolbar extends LitElement {
 
         <div class="divider"></div>
 
-        <!-- Value input (for input_number only) -->
+        <!-- Value input (for input_number) or ON/OFF selector (for input_boolean) -->
         ${this.helperType === 'input_number'
           ? html`
               <div class="section">
@@ -329,7 +342,16 @@ export class ScheduleToolbar extends LitElement {
               </div>
               <div class="divider"></div>
             `
-          : ''}
+          : html`
+              <div class="section">
+                <span class="section-label">Set blocks to:</span>
+                <select class="day-select" @change=${this._handleBooleanChange}>
+                  <option value="on" ?selected=${this._booleanValue}>ON</option>
+                  <option value="off" ?selected=${!this._booleanValue}>OFF</option>
+                </select>
+              </div>
+              <div class="divider"></div>
+            `}
 
         <!-- Day selection -->
         <div class="section">

@@ -152,6 +152,14 @@ export class ScheduleGrid extends LitElement {
       background: var(--cell-active);
     }
 
+    .cell.active.boolean-off {
+      background: #e88a5c;
+    }
+
+    .cell.active.boolean-on {
+      background: #66bb6a;
+    }
+
     .cell.selected {
       background: var(--cell-selected) !important;
     }
@@ -325,7 +333,7 @@ export class ScheduleGrid extends LitElement {
 
   private _getIntensityClass(value: number | boolean | null): string {
     if (value === null) return '';
-    if (typeof value === 'boolean') return value ? 'intensity-high' : '';
+    if (typeof value === 'boolean') return value ? 'boolean-on' : 'boolean-off';
 
     // For numbers, calculate intensity based on 0-100 range
     if (value <= 33) return 'intensity-low';
@@ -371,6 +379,9 @@ export class ScheduleGrid extends LitElement {
           : ''}
         ${isActive && this.helperType === 'input_number' && typeof value === 'number'
           ? html`<span class="cell-value">${Math.round(value)}</span>`
+          : ''}
+        ${isActive && this.helperType === 'input_boolean' && typeof value === 'boolean'
+          ? html`<span class="cell-value">${value ? 'ON' : 'OFF'}</span>`
           : ''}
       </div>
     `;

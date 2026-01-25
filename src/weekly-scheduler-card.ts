@@ -1,9 +1,9 @@
 /**
  * Weekly Scheduler Card - Main Lovelace card component
- * @version 0.2.4
+ * @version 0.2.5
  */
 
-export const CARD_VERSION = '0.2.4';
+export const CARD_VERSION = '0.2.5';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -24,15 +24,23 @@ import {
 import './components/schedule-grid';
 import './components/toolbar';
 
-// Register with Home Assistant
+// Register with Home Assistant (only once)
 (window as any).customCards = (window as any).customCards || [];
-(window as any).customCards.push({
-  type: 'weekly-scheduler-card',
-  name: 'Weekly Scheduler Card',
-  description: 'A card for managing weekly schedules for input helpers',
-  preview: true,
-  version: CARD_VERSION,
-});
+const existingCard = (window as any).customCards.find(
+  (card: any) => card.type === 'weekly-scheduler-card'
+);
+if (!existingCard) {
+  (window as any).customCards.push({
+    type: 'weekly-scheduler-card',
+    name: 'Weekly Scheduler Card',
+    description: 'A card for managing weekly schedules for input helpers',
+    preview: true,
+    version: CARD_VERSION,
+  });
+} else {
+  // Update version if already registered
+  existingCard.version = CARD_VERSION;
+}
 
 console.info(
   `%c WEEKLY-SCHEDULER-CARD %c v${CARD_VERSION} `,
@@ -505,6 +513,37 @@ export class WeeklySchedulerCard extends LitElement {
 export class WeeklySchedulerCardEditor extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ type: Object }) _config?: CardConfig;
+  @state() private _helperEntitiesCache: string[] = [];
+
+  private _updateHelperEntitiesCache() {
+    if (!this.hass) return;
+
+    const newHelpers = Object.keys(this.hass.states)
+      .filter(
+        (entityId) =>
+          entityId.startsWith('input_number.') ||
+          entityId.startsWith('input_boolean.')
+      )
+      .sort();
+
+    // Only update if the list actually changed
+    if (JSON.stringify(newHelpers) !== JSON.stringify(this._helperEntitiesCache)) {
+      this._helperEntitiesCache = newHelpers;
+    }
+  }
+
+  firstUpdated() {
+    // Populate cache on first render
+    this._updateHelperEntitiesCache();
+  }
+
+  // Force re-render when hass changes
+  updated(changedProps: PropertyValues) {
+    super.updated(changedProps);
+    if (changedProps.has('hass') && this.hass) {
+      this._updateHelperEntitiesCache();
+    }
+  }
 
   static styles = css`
     .editor {
@@ -561,13 +600,20 @@ export class WeeklySchedulerCardEditor extends LitElement {
    * Get all input_number and input_boolean entities.
    */
   private _getHelperEntities(): string[] {
+    // Use cached list if available, otherwise compute it
+    if (this._helperEntitiesCache.length > 0) {
+      return this._helperEntitiesCache;
+    }
+
     if (!this.hass) return [];
 
-    return Object.keys(this.hass.states).filter(
-      (entityId) =>
-        entityId.startsWith('input_number.') ||
-        entityId.startsWith('input_boolean.')
-    ).sort();
+    return Object.keys(this.hass.states)
+      .filter(
+        (entityId) =>
+          entityId.startsWith('input_number.') ||
+          entityId.startsWith('input_boolean.')
+      )
+      .sort();
   }
 
   /**

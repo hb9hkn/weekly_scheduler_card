@@ -1,9 +1,9 @@
 /**
  * Weekly Scheduler Card - Main Lovelace card component
- * @version 0.3.3
+ * @version 0.3.4
  */
 
-export const CARD_VERSION = '0.3.3';
+export const CARD_VERSION = '0.3.4';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -66,7 +66,6 @@ export class WeeklySchedulerCard extends LitElement {
   @state() private _helperEntity: string = '';
   @state() private _currentValue: number = 50;
   @state() private _defaultValue: number = 50;
-  @state() private _defaultBooleanValue: boolean = true;
   @state() private _scheduleEntity: string = '';
   @state() private _isCreating: boolean = false;
 
@@ -312,16 +311,21 @@ export class WeeklySchedulerCard extends LitElement {
   }
 
   private async _handleSelectionComplete(e: CustomEvent) {
-    const { days, startSlot, endSlot, action } = e.detail;
+    const { days, startSlot, endSlot, action, currentValue } = e.detail;
 
     let newSchedule = cloneSchedule(this._schedule);
 
     for (const day of days as DayName[]) {
-      if (action === 'add') {
-        const value =
-          this._helperType === 'input_boolean' ? this._defaultBooleanValue : this._defaultValue;
-        newSchedule = addTimeBlock(newSchedule, day, startSlot, endSlot, value);
+      if (action === 'toggle') {
+        // Boolean helper: toggle the value
+        // If current is true (ON), set to false (OFF); if false/null, set to true (ON)
+        const newValue = currentValue === true ? false : true;
+        newSchedule = addTimeBlock(newSchedule, day, startSlot, endSlot, newValue);
+      } else if (action === 'add') {
+        // Number helper: always set to the selected value (overwrite)
+        newSchedule = addTimeBlock(newSchedule, day, startSlot, endSlot, this._defaultValue);
       } else {
+        // 'remove' action (not currently used but kept for compatibility)
         newSchedule = removeTimeBlock(newSchedule, day, startSlot, endSlot);
       }
     }
@@ -381,11 +385,7 @@ export class WeeklySchedulerCard extends LitElement {
   }
 
   private _handleValueChange(e: CustomEvent) {
-    if (this._helperType === 'input_boolean') {
-      this._defaultBooleanValue = e.detail.value;
-    } else {
-      this._defaultValue = e.detail.value;
-    }
+    this._defaultValue = e.detail.value;
   }
 
   private _renderCreateSchedule() {

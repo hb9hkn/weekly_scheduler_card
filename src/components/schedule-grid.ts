@@ -303,17 +303,20 @@ export class ScheduleGrid extends LitElement {
 
     if (!result) return;
 
-    // Determine if we should add or remove blocks
-    // If any cell in selection has a value, we clear; otherwise we add
-    let hasValue = false;
-    for (const day of result.days) {
-      for (let slot = result.startSlot; slot < result.endSlot; slot++) {
-        if (isSlotInBlock(this.schedule, day, slot)) {
-          hasValue = true;
-          break;
-        }
-      }
-      if (hasValue) break;
+    // Get the current value of the first cell in selection (for toggle logic)
+    const firstDay = result.days[0];
+    const firstSlot = result.startSlot;
+    const currentValue = getValueAtSlot(this.schedule, firstDay, firstSlot);
+
+    // Determine action based on helper type
+    let action: 'add' | 'remove' | 'toggle';
+
+    if (this.helperType === 'input_boolean') {
+      // Boolean: always toggle
+      action = 'toggle';
+    } else {
+      // Number: always set the new value (overwrite)
+      action = 'add';
     }
 
     // Dispatch event for parent to handle
@@ -323,7 +326,8 @@ export class ScheduleGrid extends LitElement {
           days: result.days,
           startSlot: result.startSlot,
           endSlot: result.endSlot,
-          action: hasValue ? 'remove' : 'add',
+          action: action,
+          currentValue: currentValue,
         },
         bubbles: true,
         composed: true,

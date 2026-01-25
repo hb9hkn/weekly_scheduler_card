@@ -1,6 +1,6 @@
 {
   "name": "weekly-scheduler-card",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "type": "module",
   "description": "Home Assistant Lovelace card for weekly scheduling",
   "main": "dist/weekly-scheduler-card.js",

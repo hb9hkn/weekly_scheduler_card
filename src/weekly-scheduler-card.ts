@@ -3,7 +3,7 @@
  * @version 0.3.4
  */
 
-export const CARD_VERSION = '0.5.0-beta.2';
+export const CARD_VERSION = '0.5.0-beta.1';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -69,8 +69,11 @@ export class WeeklySchedulerCard extends LitElement {
   @state() private _defaultValue: number = 50;
   @state() private _scheduleEntity: string = '';
   @state() private _isCreating: boolean = false;
+  @state() private _isMobile: boolean = false;
   @state() private _editModeActive: boolean = false;
   private _autoLockTimer: number | undefined;
+  private _mobileQuery: MediaQueryList | undefined;
+  private _mobileQueryHandler: ((e: MediaQueryListEvent) => void) | undefined;
 
   // --- Permission helpers ---
 
@@ -83,10 +86,6 @@ export class WeeklySchedulerCard extends LitElement {
     };
   }
 
-  private get _requireEditMode(): boolean {
-    return this.config?.require_edit_mode === true;
-  }
-
   private get _hasAnyPermission(): boolean {
     const p = this._permissions;
     return p.schedule_toggle || p.edit_schedule || p.copy_schedule || p.clear_schedule;
@@ -94,20 +93,38 @@ export class WeeklySchedulerCard extends LitElement {
 
   private get _showToolbar(): boolean {
     if (!this._hasAnyPermission) return false;
-    if (this._requireEditMode && !this._editModeActive) return false;
+    if (this._isMobile && !this._editModeActive) return false;
     return true;
   }
 
   private get _gridEditable(): boolean {
     if (!this._permissions.edit_schedule) return false;
-    if (this._requireEditMode && !this._editModeActive) return false;
+    if (this._isMobile && !this._editModeActive) return false;
     return true;
   }
 
   // --- Lifecycle ---
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._mobileQuery = window.matchMedia('(max-width: 600px)');
+    this._isMobile = this._mobileQuery.matches;
+    this._mobileQueryHandler = (e: MediaQueryListEvent) => {
+      const wasMobile = this._isMobile;
+      this._isMobile = e.matches;
+      if (wasMobile && !this._isMobile) {
+        this._editModeActive = false;
+        this._clearAutoLockTimer();
+      }
+    };
+    this._mobileQuery.addEventListener('change', this._mobileQueryHandler);
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
+    if (this._mobileQuery && this._mobileQueryHandler) {
+      this._mobileQuery.removeEventListener('change', this._mobileQueryHandler);
+    }
     this._clearAutoLockTimer();
   }
 
@@ -122,7 +139,7 @@ export class WeeklySchedulerCard extends LitElement {
 
   private _resetAutoLockTimer() {
     this._clearAutoLockTimer();
-    if (this._requireEditMode && this._editModeActive) {
+    if (this._isMobile && this._editModeActive) {
       this._autoLockTimer = window.setTimeout(() => {
         this._editModeActive = false;
         this._autoLockTimer = undefined;
@@ -131,7 +148,7 @@ export class WeeklySchedulerCard extends LitElement {
   }
 
   private _handleUserInteraction = () => {
-    if (this._requireEditMode && this._editModeActive) {
+    if (this._isMobile && this._editModeActive) {
       this._resetAutoLockTimer();
     }
   };
@@ -610,7 +627,7 @@ export class WeeklySchedulerCard extends LitElement {
     const permissions = this._permissions;
     const showToolbar = this._showToolbar;
     const gridEditable = this._gridEditable;
-    const showEditModeToggle = this._requireEditMode && this._hasAnyPermission;
+    const showEditModeToggle = this._isMobile && this._hasAnyPermission;
 
     return html`
       <ha-card>
@@ -1014,16 +1031,6 @@ export class WeeklySchedulerCardEditor extends LitElement {
             <label for="perm_clear">Clear schedule (clear buttons)</label>
           </div>
 
-          <div class="permission-row">
-            <input
-              type="checkbox"
-              id="perm_edit_mode"
-              name="require_edit_mode"
-              .checked=${this._config?.require_edit_mode === true}
-              @change=${this._valueChanged}
-            />
-            <label for="perm_edit_mode">Require Edit Mode toggle (protects against accidental changes)</label>
-          </div>
         </div>
       </div>
     `;

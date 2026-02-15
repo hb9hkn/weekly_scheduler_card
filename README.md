@@ -77,7 +77,6 @@ title: Bedroom Temperature Schedule
 | `edit_schedule` | boolean | No | `true` | Allow grid interactions and value input |
 | `copy_schedule` | boolean | No | `true` | Show copy-to-all, copy-to-workdays, copy-to-weekend buttons |
 | `clear_schedule` | boolean | No | `true` | Show clear-day and clear-all buttons |
-| `require_edit_mode` | boolean | No | `false` | Require explicit Edit Mode toggle before any changes (use with conditional cards for mobile protection) |
 
 *Either `helper_entity` (recommended) or `entity` (legacy) is required.
 
@@ -178,54 +177,15 @@ The four permission groups are:
 2. Create a separate dashboard/view for regular users with a restricted card (permissions set to `false`)
 3. Assign dashboard visibility per user in Home Assistant
 
-## Edit Mode Protection
+## Mobile Edit Mode
 
-The `require_edit_mode` option adds an **Edit Mode** toggle to the card. When enabled, the schedule is locked by default — the user must explicitly flip the toggle before making changes. After 30 seconds of inactivity, edit mode automatically turns off.
+On mobile screens (viewport width < 600px), an **Edit Mode** toggle automatically appears above the toolbar. This prevents accidental schedule changes from touch interactions.
 
-This is especially useful on mobile devices where accidental touches can change the schedule. Use Home Assistant's **conditional card** with Companion App sensors to show the edit-protected version only on mobile devices.
-
-### Setting up mobile-only edit protection
-
-The HA Companion App creates device sensors you can use for conditional rendering.
-
-**Step 1:** Find your phone's app sensor entity (e.g., `sensor.pixel_app_importance` or `binary_sensor.iphone_focus`). The exact entity name depends on your device.
-
-**Step 2:** Create a conditional card in your dashboard YAML:
-
-```yaml
-# Show edit-protected card when phone app is in foreground
-- type: conditional
-  conditions:
-    - condition: state
-      entity: sensor.pixel_app_importance
-      state: foreground
-  card:
-    type: custom:weekly-scheduler-card
-    helper_entity: input_number.thermostat_setpoint
-    title: Thermostat Schedule
-    require_edit_mode: true
-
-# Show normal card otherwise (desktop browser)
-- type: conditional
-  conditions:
-    - condition: state
-      entity: sensor.pixel_app_importance
-      state_not: foreground
-  card:
-    type: custom:weekly-scheduler-card
-    helper_entity: input_number.thermostat_setpoint
-    title: Thermostat Schedule
-```
-
-You can also combine `require_edit_mode` with permissions to create a card where the user must toggle edit mode and can only perform certain actions:
-
-```yaml
-type: custom:weekly-scheduler-card
-helper_entity: input_number.thermostat_setpoint
-require_edit_mode: true
-copy_schedule: false
-clear_schedule: false
-```
+- **Edit Mode OFF** (default): The schedule grid is non-interactive and the toolbar is hidden. The card displays the schedule as a read-only visualization.
+- **Edit Mode ON**: The permitted controls appear and the grid becomes interactive (if `edit_schedule` is enabled).
+- **Auto-lock**: After 30 seconds of no interaction, edit mode silently turns off automatically.
+- The auto-lock timer resets on any touch, click, or input within the card.
+- On desktop screens (viewport >= 600px), there is no edit mode toggle — permitted controls are always visible.
 
 ## Creating a New Schedule
 

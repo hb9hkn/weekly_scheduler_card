@@ -3,7 +3,7 @@
  * @version 0.3.4
  */
 
-export const CARD_VERSION = '0.5.0-beta.1';
+export const CARD_VERSION = '0.5.0-beta.3';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -291,9 +291,23 @@ export class WeeklySchedulerCard extends LitElement {
       color: #e65100;
     }
 
+    .edit-mode-section {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .edit-mode-label {
       font-weight: 600;
       font-size: 13px;
+    }
+
+    .edit-mode-bar .schedule-slider {
+      background-color: #bdbdbd;
+    }
+
+    .edit-mode-bar .toggle-switch input:checked + .schedule-slider {
+      background-color: var(--success-color, #66bb6a);
     }
 
     .edit-mode-bar .toggle-switch {
@@ -541,6 +555,20 @@ export class WeeklySchedulerCard extends LitElement {
     }
   }
 
+  private async _handleToggleEnabledDirect() {
+    if (!this.hass || !this._scheduleEntity) return;
+
+    const newEnabled = !this._enabled;
+
+    try {
+      await this.hass.callService('switch', newEnabled ? 'turn_on' : 'turn_off', {
+        entity_id: this._scheduleEntity,
+      });
+    } catch (error) {
+      console.error('Failed to toggle schedule:', error);
+    }
+  }
+
   private _handleValueChange(e: CustomEvent) {
     this._defaultValue = e.detail.value;
   }
@@ -628,6 +656,11 @@ export class WeeklySchedulerCard extends LitElement {
     const showToolbar = this._showToolbar;
     const gridEditable = this._gridEditable;
     const showEditModeToggle = this._isMobile && this._hasAnyPermission;
+    const showScheduleToggleInBar = showEditModeToggle && permissions.schedule_toggle;
+    // On mobile, schedule toggle lives in the edit mode bar, so hide it from toolbar
+    const toolbarPermissions = this._isMobile
+      ? { ...permissions, schedule_toggle: false }
+      : permissions;
 
     return html`
       <ha-card>
@@ -647,15 +680,33 @@ export class WeeklySchedulerCard extends LitElement {
           ${showEditModeToggle
             ? html`
                 <div class="edit-mode-bar">
-                  <span class="edit-mode-label">Edit Mode</span>
-                  <label class="toggle-switch">
-                    <input
-                      type="checkbox"
-                      .checked=${this._editModeActive}
-                      @change=${this._handleEditModeToggle}
-                    />
-                    <span class="toggle-slider"></span>
-                  </label>
+                  ${showScheduleToggleInBar
+                    ? html`
+                        <div class="edit-mode-section">
+                          <span class="edit-mode-label">Schedule</span>
+                          <label class="toggle-switch">
+                            <input
+                              type="checkbox"
+                              .checked=${this._enabled}
+                              @change=${this._handleToggleEnabledDirect}
+                            />
+                            <span class="toggle-slider schedule-slider"></span>
+                          </label>
+                          <span class="edit-mode-label">${this._enabled ? 'On' : 'Off'}</span>
+                        </div>
+                      `
+                    : ''}
+                  <div class="edit-mode-section">
+                    <span class="edit-mode-label">Edit Mode</span>
+                    <label class="toggle-switch">
+                      <input
+                        type="checkbox"
+                        .checked=${this._editModeActive}
+                        @change=${this._handleEditModeToggle}
+                      />
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
                 </div>
               `
             : ''}
@@ -667,7 +718,7 @@ export class WeeklySchedulerCard extends LitElement {
                   .helperType=${this._helperType}
                   .currentValue=${this._currentValue}
                   .helperEntity=${this._helperEntity}
-                  .permissions=${permissions}
+                  .permissions=${toolbarPermissions}
                   @copy-to-all=${this._handleCopyToAll}
                   @copy-to-workdays=${this._handleCopyToWorkdays}
                   @copy-to-weekend=${this._handleCopyToWeekend}

@@ -72,7 +72,8 @@ export class WeeklySchedulerCard extends LitElement {
   @state() private _isMobile: boolean = false;
   @state() private _editModeActive: boolean = false;
   private _autoLockTimer: number | undefined;
-  private _resizeObserver: ResizeObserver | undefined;
+  private _mobileQuery: MediaQueryList | undefined;
+  private _mobileQueryHandler: ((e: MediaQueryListEvent) => void) | undefined;
 
   // --- Permission helpers ---
 
@@ -106,23 +107,24 @@ export class WeeklySchedulerCard extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this._resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const width = entry.contentRect.width;
-        const wasMobile = this._isMobile;
-        this._isMobile = width < 600;
-        if (wasMobile && !this._isMobile) {
-          this._editModeActive = false;
-          this._clearAutoLockTimer();
-        }
+    this._mobileQuery = window.matchMedia('(max-width: 600px)');
+    this._isMobile = this._mobileQuery.matches;
+    this._mobileQueryHandler = (e: MediaQueryListEvent) => {
+      const wasMobile = this._isMobile;
+      this._isMobile = e.matches;
+      if (wasMobile && !this._isMobile) {
+        this._editModeActive = false;
+        this._clearAutoLockTimer();
       }
-    });
-    this._resizeObserver.observe(this);
+    };
+    this._mobileQuery.addEventListener('change', this._mobileQueryHandler);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this._resizeObserver?.disconnect();
+    if (this._mobileQuery && this._mobileQueryHandler) {
+      this._mobileQuery.removeEventListener('change', this._mobileQueryHandler);
+    }
     this._clearAutoLockTimer();
   }
 

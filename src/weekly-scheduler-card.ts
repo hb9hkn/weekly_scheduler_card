@@ -683,17 +683,21 @@ export class WeeklySchedulerCard extends LitElement {
                         </div>
                       `
                     : ''}
-                  <div class="edit-mode-section">
-                    <span class="edit-mode-label">Edit Mode</span>
-                    <label class="toggle-switch">
-                      <input
-                        type="checkbox"
-                        .checked=${this._editModeActive}
-                        @change=${this._handleEditModeToggle}
-                      />
-                      <span class="toggle-slider"></span>
-                    </label>
-                  </div>
+                  ${permissions.edit_schedule
+                    ? html`
+                        <div class="edit-mode-section">
+                          <span class="edit-mode-label">Edit Mode</span>
+                          <label class="toggle-switch">
+                            <input
+                              type="checkbox"
+                              .checked=${this._editModeActive}
+                              @change=${this._handleEditModeToggle}
+                            />
+                            <span class="toggle-slider"></span>
+                          </label>
+                        </div>
+                      `
+                    : ''}
                 </div>
               `
             : ''}

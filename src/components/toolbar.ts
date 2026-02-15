@@ -10,7 +10,7 @@ export class ScheduleToolbar extends LitElement {
   @property({ type: Boolean }) enabled = true;
   @property({ type: String }) helperType: 'input_number' | 'input_boolean' =
     'input_number';
-  @property({ type: Number }) currentValue = 50;
+  @property({ type: Number }) currentValue = 0;
   @property({ type: String }) helperEntity = '';
 
   @property({ type: Object }) permissions: ResolvedPermissions = {
@@ -19,7 +19,7 @@ export class ScheduleToolbar extends LitElement {
   };
 
   @state() private _selectedDay: DayName = 'monday';
-  @state() private _inputValue: number = 50;
+  @state() private _inputValue: number = 0;
 
   static styles = css`
     :host {
@@ -309,9 +309,6 @@ export class ScheduleToolbar extends LitElement {
   private _handleValueChange(e: Event) {
     const input = e.target as HTMLInputElement;
     this._inputValue = Number(input.value);
-  }
-
-  private _handleValueConfirm() {
     this.dispatchEvent(
       new CustomEvent('value-change', {
         detail: { value: this._inputValue },
@@ -360,7 +357,6 @@ export class ScheduleToolbar extends LitElement {
                   class="value-input"
                   .value=${String(this._inputValue)}
                   @input=${this._handleValueChange}
-                  @change=${this._handleValueConfirm}
                   step="any"
                 />
               </div>

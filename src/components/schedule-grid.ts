@@ -46,6 +46,8 @@ export class ScheduleGrid extends LitElement {
 
   @property({ type: Number }) defaultValue: number = 50;
 
+  @property({ type: Boolean }) editable: boolean = true;
+
   @state() private _selection: SelectionState = createSelectionState();
   @state() private _currentSlot: number = getCurrentSlot();
   @state() private _currentDay: DayName = getCurrentDay();
@@ -204,6 +206,34 @@ export class ScheduleGrid extends LitElement {
       max-width: 90%;
     }
 
+    .grid-container.read-only .cell {
+      cursor: default;
+    }
+
+    .grid-container.read-only .cell:hover {
+      background: var(--grid-bg);
+    }
+
+    .grid-container.read-only .cell.active:hover {
+      background: var(--cell-active);
+    }
+
+    .grid-container.read-only .cell.active.intensity-low:hover {
+      background: #a5c9e2;
+    }
+
+    .grid-container.read-only .cell.active.intensity-medium:hover {
+      background: #7ab3d6;
+    }
+
+    .grid-container.read-only .cell.active.boolean-off:hover {
+      background: #e88a5c;
+    }
+
+    .grid-container.read-only .cell.active.boolean-on:hover {
+      background: #66bb6a;
+    }
+
     /* Touch improvements */
     @media (pointer: coarse) {
       .cell {
@@ -243,6 +273,7 @@ export class ScheduleGrid extends LitElement {
   }
 
   private _handleMouseDown(e: MouseEvent) {
+    if (!this.editable) return;
     const grid = this.shadowRoot?.querySelector('.grid-container');
     if (!grid) return;
 
@@ -277,6 +308,7 @@ export class ScheduleGrid extends LitElement {
   };
 
   private _handleTouchStart(e: TouchEvent) {
+    if (!this.editable) return;
     const grid = this.shadowRoot?.querySelector('.grid-container');
     if (!grid) return;
 
@@ -288,6 +320,7 @@ export class ScheduleGrid extends LitElement {
   }
 
   private _handleTouchMove(e: TouchEvent) {
+    if (!this.editable) return;
     const grid = this.shadowRoot?.querySelector('.grid-container');
     if (!grid) return;
 
@@ -411,7 +444,7 @@ export class ScheduleGrid extends LitElement {
 
     return html`
       <div
-        class="grid-container"
+        class="grid-container ${this.editable ? '' : 'read-only'}"
         @mousedown=${this._handleMouseDown}
         @touchstart=${this._handleTouchStart}
         @touchmove=${this._handleTouchMove}

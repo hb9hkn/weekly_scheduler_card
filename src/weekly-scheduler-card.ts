@@ -3,13 +3,14 @@
  * @version 0.3.4
  */
 
-export const CARD_VERSION = '0.4.1';
+export const CARD_VERSION = '0.5.0-beta.1';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import {
   HomeAssistant,
   CardConfig,
+  ResolvedPermissions,
   WeeklySchedule,
   DayName,
   DAYS,
@@ -68,6 +69,96 @@ export class WeeklySchedulerCard extends LitElement {
   @state() private _defaultValue: number = 50;
   @state() private _scheduleEntity: string = '';
   @state() private _isCreating: boolean = false;
+  @state() private _isMobile: boolean = false;
+  @state() private _editModeActive: boolean = false;
+  private _autoLockTimer: number | undefined;
+  private _resizeObserver: ResizeObserver | undefined;
+
+  // --- Permission helpers ---
+
+  private get _permissions(): ResolvedPermissions {
+    return {
+      schedule_toggle: this.config?.schedule_toggle !== false,
+      edit_schedule: this.config?.edit_schedule !== false,
+      copy_schedule: this.config?.copy_schedule !== false,
+      clear_schedule: this.config?.clear_schedule !== false,
+    };
+  }
+
+  private get _hasAnyPermission(): boolean {
+    const p = this._permissions;
+    return p.schedule_toggle || p.edit_schedule || p.copy_schedule || p.clear_schedule;
+  }
+
+  private get _showToolbar(): boolean {
+    if (!this._hasAnyPermission) return false;
+    if (this._isMobile && !this._editModeActive) return false;
+    return true;
+  }
+
+  private get _gridEditable(): boolean {
+    if (!this._permissions.edit_schedule) return false;
+    if (this._isMobile && !this._editModeActive) return false;
+    return true;
+  }
+
+  // --- Lifecycle ---
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        const wasMobile = this._isMobile;
+        this._isMobile = width < 600;
+        if (wasMobile && !this._isMobile) {
+          this._editModeActive = false;
+          this._clearAutoLockTimer();
+        }
+      }
+    });
+    this._resizeObserver.observe(this);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._resizeObserver?.disconnect();
+    this._clearAutoLockTimer();
+  }
+
+  // --- Auto-lock timer ---
+
+  private _clearAutoLockTimer() {
+    if (this._autoLockTimer !== undefined) {
+      window.clearTimeout(this._autoLockTimer);
+      this._autoLockTimer = undefined;
+    }
+  }
+
+  private _resetAutoLockTimer() {
+    this._clearAutoLockTimer();
+    if (this._isMobile && this._editModeActive) {
+      this._autoLockTimer = window.setTimeout(() => {
+        this._editModeActive = false;
+        this._autoLockTimer = undefined;
+      }, 30000);
+    }
+  }
+
+  private _handleUserInteraction = () => {
+    if (this._isMobile && this._editModeActive) {
+      this._resetAutoLockTimer();
+    }
+  };
+
+  private _handleEditModeToggle() {
+    this._editModeActive = !this._editModeActive;
+    if (this._editModeActive) {
+      this._resetAutoLockTimer();
+    } else {
+      this._clearAutoLockTimer();
+    }
+  }
 
   static styles = css`
     :host {
@@ -183,6 +274,70 @@ export class WeeklySchedulerCard extends LitElement {
 
     .create-button ha-icon {
       --mdc-icon-size: 20px;
+    }
+
+    .edit-mode-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      background: #fff3e0;
+      border: 1px solid #ffe0b2;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #e65100;
+    }
+
+    .edit-mode-label {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .edit-mode-bar .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 22px;
+    }
+
+    .edit-mode-bar .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .edit-mode-bar .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #bdbdbd;
+      transition: 0.3s;
+      border-radius: 22px;
+    }
+
+    .edit-mode-bar .toggle-slider:before {
+      position: absolute;
+      content: '';
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .edit-mode-bar .toggle-switch input:checked + .toggle-slider {
+      background-color: #e65100;
+    }
+
+    .edit-mode-bar .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(20px);
     }
   `;
 
@@ -467,9 +622,19 @@ export class WeeklySchedulerCard extends LitElement {
       entity.attributes.friendly_name ||
       'Weekly Schedule';
 
+    const permissions = this._permissions;
+    const showToolbar = this._showToolbar;
+    const gridEditable = this._gridEditable;
+    const showEditModeToggle = this._isMobile && this._hasAnyPermission;
+
     return html`
       <ha-card>
-        <div class="card">
+        <div
+          class="card"
+          @click=${this._handleUserInteraction}
+          @touchstart=${this._handleUserInteraction}
+          @input=${this._handleUserInteraction}
+        >
           <div class="header">
             <div class="title">${title}</div>
             <div class="status ${this._enabled ? '' : 'disabled'}">
@@ -477,24 +642,46 @@ export class WeeklySchedulerCard extends LitElement {
             </div>
           </div>
 
-          <schedule-toolbar
-            .enabled=${this._enabled}
-            .helperType=${this._helperType}
-            .currentValue=${this._currentValue}
-            .helperEntity=${this._helperEntity}
-            @copy-to-all=${this._handleCopyToAll}
-            @copy-to-workdays=${this._handleCopyToWorkdays}
-            @copy-to-weekend=${this._handleCopyToWeekend}
-            @clear-day=${this._handleClearDay}
-            @clear-all=${this._handleClearAll}
-            @toggle-enabled=${this._handleToggleEnabled}
-            @value-change=${this._handleValueChange}
-          ></schedule-toolbar>
+          ${showEditModeToggle
+            ? html`
+                <div class="edit-mode-bar">
+                  <span class="edit-mode-label">Edit Mode</span>
+                  <label class="toggle-switch">
+                    <input
+                      type="checkbox"
+                      .checked=${this._editModeActive}
+                      @change=${this._handleEditModeToggle}
+                    />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              `
+            : ''}
+
+          ${showToolbar
+            ? html`
+                <schedule-toolbar
+                  .enabled=${this._enabled}
+                  .helperType=${this._helperType}
+                  .currentValue=${this._currentValue}
+                  .helperEntity=${this._helperEntity}
+                  .permissions=${permissions}
+                  @copy-to-all=${this._handleCopyToAll}
+                  @copy-to-workdays=${this._handleCopyToWorkdays}
+                  @copy-to-weekend=${this._handleCopyToWeekend}
+                  @clear-day=${this._handleClearDay}
+                  @clear-all=${this._handleClearAll}
+                  @toggle-enabled=${this._handleToggleEnabled}
+                  @value-change=${this._handleValueChange}
+                ></schedule-toolbar>
+              `
+            : ''}
 
           <schedule-grid
             .schedule=${this._schedule}
             .helperType=${this._helperType}
             .defaultValue=${this._defaultValue}
+            .editable=${gridEditable}
             @selection-complete=${this._handleSelectionComplete}
           ></schedule-grid>
         </div>
@@ -594,6 +781,36 @@ export class WeeklySchedulerCardEditor extends LitElement {
       color: var(--secondary-text-color);
       margin-top: 4px;
       font-style: italic;
+    }
+
+    .permissions-section {
+      border-top: 1px solid var(--divider-color);
+      padding-top: 12px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .permission-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+    }
+
+    .permission-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .permission-row label {
+      font-size: 13px;
+      cursor: pointer;
     }
   `;
 
@@ -759,6 +976,58 @@ export class WeeklySchedulerCardEditor extends LitElement {
             @input=${this._valueChanged}
             placeholder="Weekly Schedule"
           />
+        </div>
+
+        <div class="permissions-section">
+          <label class="section-title">Permissions</label>
+          <div class="info-text">
+            Control which actions are available on this card instance.
+            All enabled by default.
+          </div>
+
+          <div class="permission-row">
+            <input
+              type="checkbox"
+              id="perm_toggle"
+              name="schedule_toggle"
+              .checked=${this._config?.schedule_toggle !== false}
+              @change=${this._valueChanged}
+            />
+            <label for="perm_toggle">Enable/Disable schedule toggle</label>
+          </div>
+
+          <div class="permission-row">
+            <input
+              type="checkbox"
+              id="perm_edit"
+              name="edit_schedule"
+              .checked=${this._config?.edit_schedule !== false}
+              @change=${this._valueChanged}
+            />
+            <label for="perm_edit">Edit schedule (grid + value input)</label>
+          </div>
+
+          <div class="permission-row">
+            <input
+              type="checkbox"
+              id="perm_copy"
+              name="copy_schedule"
+              .checked=${this._config?.copy_schedule !== false}
+              @change=${this._valueChanged}
+            />
+            <label for="perm_copy">Copy schedule (copy buttons)</label>
+          </div>
+
+          <div class="permission-row">
+            <input
+              type="checkbox"
+              id="perm_clear"
+              name="clear_schedule"
+              .checked=${this._config?.clear_schedule !== false}
+              @change=${this._valueChanged}
+            />
+            <label for="perm_clear">Clear schedule (clear buttons)</label>
+          </div>
         </div>
       </div>
     `;

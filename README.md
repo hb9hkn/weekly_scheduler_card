@@ -18,6 +18,8 @@ A Lovelace card for Home Assistant that provides an Outlook-style weekly calenda
 - **Copy Functions**: Copy schedules to all days, workdays only, or weekends
 - **Value Input**: Set specific values for `input_number` schedules
 - **Enable/Disable Toggle**: Turn schedules on/off without losing configuration
+- **Granular Permissions**: Control which actions are available per card instance (ideal for admin vs. regular user dashboards)
+- **Mobile Edit Mode**: Prevents accidental schedule changes on mobile with an explicit edit toggle and 30-second auto-lock
 - **Theme Support**: Respects Home Assistant's theme colors
 - **Responsive Design**: Works on desktop and mobile devices
 
@@ -71,6 +73,10 @@ title: Bedroom Temperature Schedule
 | `helper_entity` | string | Yes* | - | The helper entity to schedule (`input_number.*` or `input_boolean.*`) |
 | `entity` | string | Yes* | - | Legacy: Direct schedule switch entity ID |
 | `title` | string | No | Entity name | Card title displayed in the header |
+| `schedule_toggle` | boolean | No | `true` | Show the enable/disable schedule toggle |
+| `edit_schedule` | boolean | No | `true` | Allow grid interactions and value input |
+| `copy_schedule` | boolean | No | `true` | Show copy-to-all, copy-to-workdays, copy-to-weekend buttons |
+| `clear_schedule` | boolean | No | `true` | Show clear-day and clear-all buttons |
 
 *Either `helper_entity` (recommended) or `entity` (legacy) is required.
 
@@ -88,6 +94,26 @@ title: Thermostat Schedule
 type: custom:weekly-scheduler-card
 helper_entity: input_boolean.guest_mode
 title: Guest Mode Schedule
+```
+
+**Read-only view (e.g. for a regular user dashboard):**
+```yaml
+type: custom:weekly-scheduler-card
+helper_entity: input_number.thermostat_setpoint
+title: Thermostat Schedule
+schedule_toggle: false
+edit_schedule: false
+copy_schedule: false
+clear_schedule: false
+```
+
+**Allow toggling and editing, but no copy/clear:**
+```yaml
+type: custom:weekly-scheduler-card
+helper_entity: input_number.thermostat_setpoint
+title: Thermostat Schedule
+copy_schedule: false
+clear_schedule: false
 ```
 
 **Legacy configuration (existing schedule entity):**
@@ -125,6 +151,41 @@ Use the toolbar buttons to copy schedules:
 
 - Use the toggle switch in the header to enable or disable the schedule
 - When disabled, the schedule configuration is preserved but not applied
+
+## Permissions
+
+Permissions let you control which actions are available on each card instance. This is useful for creating separate dashboards for admin and regular users without needing Home Assistant user role detection.
+
+The four permission groups are:
+
+| Permission | Controls |
+|------------|----------|
+| `schedule_toggle` | The on/off switch for the schedule |
+| `edit_schedule` | Grid drag interactions and the value input field |
+| `copy_schedule` | Copy-to-all, copy-to-workdays, copy-to-weekend buttons and day selector |
+| `clear_schedule` | Clear-day and clear-all buttons |
+
+**Behavior:**
+- All permissions default to `true` — existing cards are unaffected
+- When a permission is disabled, those controls are hidden (not greyed out)
+- When all permissions are disabled, the toolbar is hidden entirely and the grid is non-interactive, creating a clean read-only view
+- Permissions can be configured via the card editor UI (checkboxes) or in YAML
+
+### Setting up admin vs. regular user dashboards
+
+1. Create a dashboard/view for admin users with a full-access card (default config)
+2. Create a separate dashboard/view for regular users with a restricted card (permissions set to `false`)
+3. Assign dashboard visibility per user in Home Assistant
+
+## Mobile Edit Mode
+
+On mobile screens (card width < 600px), an **Edit Mode** toggle appears above the toolbar. This prevents accidental schedule changes from touch interactions.
+
+- **Edit Mode OFF** (default): The schedule grid is non-interactive and the toolbar is hidden. The card displays the schedule as a read-only visualization.
+- **Edit Mode ON**: The permitted controls appear and the grid becomes interactive (if `edit_schedule` is enabled).
+- **Auto-lock**: After 30 seconds of no interaction, edit mode silently turns off automatically.
+- The auto-lock timer resets on any touch, click, or input within the card.
+- On desktop screens (>= 600px), there is no edit mode toggle — permitted controls are always visible.
 
 ## Creating a New Schedule
 

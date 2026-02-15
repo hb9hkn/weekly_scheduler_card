@@ -4,7 +4,7 @@
 
 import { LitElement, html, css } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { DayName, DAYS, DAY_LABELS } from '../types';
+import { DayName, DAYS, DAY_LABELS, ResolvedPermissions } from '../types';
 
 export class ScheduleToolbar extends LitElement {
   @property({ type: Boolean }) enabled = true;
@@ -12,6 +12,13 @@ export class ScheduleToolbar extends LitElement {
     'input_number';
   @property({ type: Number }) currentValue = 50;
   @property({ type: String }) helperEntity = '';
+
+  @property({ type: Object }) permissions: ResolvedPermissions = {
+    schedule_toggle: true,
+    edit_schedule: true,
+    copy_schedule: true,
+    clear_schedule: true,
+  };
 
   @state() private _selectedDay: DayName = 'monday';
   @state() private _inputValue: number = 50;
@@ -341,26 +348,34 @@ export class ScheduleToolbar extends LitElement {
   }
 
   render() {
+    const p = this.permissions;
+    const showDaySelector = p.copy_schedule || p.clear_schedule;
+    const hasNextAfterToggle = p.edit_schedule || p.copy_schedule || p.clear_schedule;
+    const hasNextAfterValue = p.copy_schedule || p.clear_schedule;
+
     return html`
       <div class="toolbar">
         <!-- Enable/Disable toggle -->
-        <div class="section enable-toggle">
-          <span class="section-label">Schedule</span>
-          <label class="toggle-switch">
-            <input
-              type="checkbox"
-              .checked=${this.enabled}
-              @change=${this._handleToggleEnabled}
-            />
-            <span class="toggle-slider"></span>
-          </label>
-          <span class="section-label">${this.enabled ? 'On' : 'Off'}</span>
-        </div>
+        ${p.schedule_toggle
+          ? html`
+              <div class="section enable-toggle">
+                <span class="section-label">Schedule</span>
+                <label class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    .checked=${this.enabled}
+                    @change=${this._handleToggleEnabled}
+                  />
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="section-label">${this.enabled ? 'On' : 'Off'}</span>
+              </div>
+              ${hasNextAfterToggle ? html`<div class="divider"></div>` : ''}
+            `
+          : ''}
 
-        <div class="divider"></div>
-
-        <!-- Value input (for input_number only, boolean uses toggle) -->
-        ${this.helperType === 'input_number'
+        <!-- Value input (for input_number only, gated by edit_schedule) -->
+        ${p.edit_schedule && this.helperType === 'input_number'
           ? html`
               <div class="section">
                 <span class="section-label">Value:</span>
@@ -373,48 +388,63 @@ export class ScheduleToolbar extends LitElement {
                   step="any"
                 />
               </div>
-              <div class="divider"></div>
+              ${hasNextAfterValue ? html`<div class="divider"></div>` : ''}
             `
           : ''}
 
-        <!-- Day selection -->
-        <div class="section">
-          <span class="section-label">Copy from:</span>
-          <select class="day-select" @change=${this._handleDayChange}>
-            ${DAYS.map(
-              (day) => html`
-                <option value="${day}" ?selected=${day === this._selectedDay}>
-                  ${DAY_LABELS[day]}
-                </option>
-              `
-            )}
-          </select>
-        </div>
+        <!-- Day selector (shared by copy and clear) -->
+        ${showDaySelector
+          ? html`
+              <div class="section">
+                <span class="section-label">${p.copy_schedule ? 'Copy from:' : 'Day:'}</span>
+                <select class="day-select" @change=${this._handleDayChange}>
+                  ${DAYS.map(
+                    (day) => html`
+                      <option value="${day}" ?selected=${day === this._selectedDay}>
+                        ${DAY_LABELS[day]}
+                      </option>
+                    `
+                  )}
+                </select>
+              </div>
+            `
+          : ''}
 
         <!-- Copy buttons -->
-        <div class="section">
-          <button class="btn btn-primary" @click=${this._handleCopyToAll}>
-            Copy to All
-          </button>
-          <button class="btn btn-primary" @click=${this._handleCopyToWorkdays}>
-            Copy to Workdays
-          </button>
-          <button class="btn btn-primary" @click=${this._handleCopyToWeekend}>
-            Copy to Weekend
-          </button>
-        </div>
+        ${p.copy_schedule
+          ? html`
+              <div class="section">
+                <button class="btn btn-primary" @click=${this._handleCopyToAll}>
+                  Copy to All
+                </button>
+                <button class="btn btn-primary" @click=${this._handleCopyToWorkdays}>
+                  Copy to Workdays
+                </button>
+                <button class="btn btn-primary" @click=${this._handleCopyToWeekend}>
+                  Copy to Weekend
+                </button>
+              </div>
+            `
+          : ''}
 
-        <div class="divider"></div>
+        <!-- Divider between copy and clear -->
+        ${p.copy_schedule && p.clear_schedule
+          ? html`<div class="divider"></div>`
+          : ''}
 
         <!-- Clear buttons -->
-        <div class="section">
-          <button class="btn btn-secondary" @click=${this._handleClearDay}>
-            Clear ${DAY_LABELS[this._selectedDay]}
-          </button>
-          <button class="btn btn-secondary" @click=${this._handleClearAll}>
-            Clear All
-          </button>
-        </div>
+        ${p.clear_schedule
+          ? html`
+              <div class="section">
+                <button class="btn btn-secondary" @click=${this._handleClearDay}>
+                  Clear ${DAY_LABELS[this._selectedDay]}
+                </button>
+                <button class="btn btn-secondary" @click=${this._handleClearAll}>
+                  Clear All
+                </button>
+              </div>
+            `
+          : ''}
 
         <!-- Helper info -->
         <div class="helper-info">

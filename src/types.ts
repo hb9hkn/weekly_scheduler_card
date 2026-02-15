@@ -68,6 +68,18 @@ export interface CardConfig {
   helper_entity?: string; // The input_number or input_boolean to schedule
   title?: string;
   show_current_time?: boolean;
+  // Permissions (all default to true for backward compatibility)
+  schedule_toggle?: boolean; // enable/disable switch
+  edit_schedule?: boolean; // grid drag + value input
+  copy_schedule?: boolean; // copy buttons + day selector
+  clear_schedule?: boolean; // clear buttons
+}
+
+export interface ResolvedPermissions {
+  schedule_toggle: boolean;
+  edit_schedule: boolean;
+  copy_schedule: boolean;
+  clear_schedule: boolean;
 }
 
 export interface HassEntity {

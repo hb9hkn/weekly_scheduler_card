@@ -3,7 +3,7 @@
  * @version 0.3.4
  */
 
-export const CARD_VERSION = '0.5.0-beta.3';
+export const CARD_VERSION = '0.5.0-beta.4';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -65,8 +65,8 @@ export class WeeklySchedulerCard extends LitElement {
   @state() private _enabled: boolean = true;
   @state() private _helperType: 'input_number' | 'input_boolean' = 'input_number';
   @state() private _helperEntity: string = '';
-  @state() private _currentValue: number = 50;
-  @state() private _defaultValue: number = 50;
+  @state() private _currentValue: number = 0;
+  @state() private _defaultValue: number = 0;
   @state() private _scheduleEntity: string = '';
   @state() private _isCreating: boolean = false;
   @state() private _isMobile: boolean = false;
@@ -81,14 +81,12 @@ export class WeeklySchedulerCard extends LitElement {
     return {
       schedule_toggle: this.config?.schedule_toggle !== false,
       edit_schedule: this.config?.edit_schedule !== false,
-      copy_schedule: this.config?.copy_schedule !== false,
-      clear_schedule: this.config?.clear_schedule !== false,
     };
   }
 
   private get _hasAnyPermission(): boolean {
     const p = this._permissions;
-    return p.schedule_toggle || p.edit_schedule || p.copy_schedule || p.clear_schedule;
+    return p.schedule_toggle || p.edit_schedule;
   }
 
   private get _showToolbar(): boolean {
@@ -530,17 +528,6 @@ export class WeeklySchedulerCard extends LitElement {
     await this._updateSchedule(newSchedule);
   }
 
-  private async _handleClearDay(e: CustomEvent) {
-    const { day } = e.detail;
-    const newSchedule = cloneSchedule(this._schedule);
-    newSchedule[day as DayName] = [];
-    await this._updateSchedule(newSchedule);
-  }
-
-  private async _handleClearAll() {
-    await this._updateSchedule(createEmptySchedule());
-  }
-
   private async _handleToggleEnabled(e: CustomEvent) {
     if (!this.hass || !this._scheduleEntity) return;
 
@@ -722,8 +709,6 @@ export class WeeklySchedulerCard extends LitElement {
                   @copy-to-all=${this._handleCopyToAll}
                   @copy-to-workdays=${this._handleCopyToWorkdays}
                   @copy-to-weekend=${this._handleCopyToWeekend}
-                  @clear-day=${this._handleClearDay}
-                  @clear-all=${this._handleClearAll}
                   @toggle-enabled=${this._handleToggleEnabled}
                   @value-change=${this._handleValueChange}
                 ></schedule-toolbar>
@@ -1057,29 +1042,7 @@ export class WeeklySchedulerCardEditor extends LitElement {
               .checked=${this._config?.edit_schedule !== false}
               @change=${this._valueChanged}
             />
-            <label for="perm_edit">Edit schedule (grid + value input)</label>
-          </div>
-
-          <div class="permission-row">
-            <input
-              type="checkbox"
-              id="perm_copy"
-              name="copy_schedule"
-              .checked=${this._config?.copy_schedule !== false}
-              @change=${this._valueChanged}
-            />
-            <label for="perm_copy">Copy schedule (copy buttons)</label>
-          </div>
-
-          <div class="permission-row">
-            <input
-              type="checkbox"
-              id="perm_clear"
-              name="clear_schedule"
-              .checked=${this._config?.clear_schedule !== false}
-              @change=${this._valueChanged}
-            />
-            <label for="perm_clear">Clear schedule (clear buttons)</label>
+            <label for="perm_edit">Edit schedule (grid, value input, copy buttons)</label>
           </div>
 
         </div>

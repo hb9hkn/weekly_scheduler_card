@@ -74,9 +74,7 @@ title: Bedroom Temperature Schedule
 | `entity` | string | Yes* | - | Legacy: Direct schedule switch entity ID |
 | `title` | string | No | Entity name | Card title displayed in the header |
 | `schedule_toggle` | boolean | No | `true` | Show the enable/disable schedule toggle |
-| `edit_schedule` | boolean | No | `true` | Allow grid interactions and value input |
-| `copy_schedule` | boolean | No | `true` | Show copy-to-all, copy-to-workdays, copy-to-weekend buttons |
-| `clear_schedule` | boolean | No | `true` | Show clear-day and clear-all buttons |
+| `edit_schedule` | boolean | No | `true` | Allow grid interactions, value input, and copy buttons |
 
 *Either `helper_entity` (recommended) or `entity` (legacy) is required.
 
@@ -103,17 +101,14 @@ helper_entity: input_number.thermostat_setpoint
 title: Thermostat Schedule
 schedule_toggle: false
 edit_schedule: false
-copy_schedule: false
-clear_schedule: false
 ```
 
-**Allow toggling and editing, but no copy/clear:**
+**Allow toggling on/off, but no editing:**
 ```yaml
 type: custom:weekly-scheduler-card
 helper_entity: input_number.thermostat_setpoint
 title: Thermostat Schedule
-copy_schedule: false
-clear_schedule: false
+edit_schedule: false
 ```
 
 **Legacy configuration (existing schedule entity):**
@@ -131,9 +126,10 @@ title: Thermostat Schedule
 2. Click and drag on empty cells to create a block
 3. Release to confirm the selection
 
-### Removing Time Blocks
+### Modifying Time Blocks
 
-- Click and drag on existing (colored) blocks to remove them
+- For `input_number`: clicking/dragging on existing blocks overwrites them with the current value (default: 0)
+- For `input_boolean`: clicking/dragging toggles blocks between ON and OFF
 
 ### Copy Schedule
 
@@ -141,11 +137,6 @@ Use the toolbar buttons to copy schedules:
 - **Copy to All**: Copy selected day's schedule to all 7 days
 - **Copy to Workdays**: Copy to Monday through Friday
 - **Copy to Weekend**: Copy to Saturday and Sunday
-
-### Clear Schedule
-
-- **Clear Day**: Clear schedule for a specific day
-- **Clear All**: Clear the entire week's schedule
 
 ### Enable/Disable Schedule
 
@@ -156,14 +147,12 @@ Use the toolbar buttons to copy schedules:
 
 Permissions let you control which actions are available on each card instance. This is useful for creating separate dashboards for admin and regular users without needing Home Assistant user role detection.
 
-The four permission groups are:
+The two permission groups are:
 
 | Permission | Controls |
 |------------|----------|
 | `schedule_toggle` | The on/off switch for the schedule |
-| `edit_schedule` | Grid drag interactions and the value input field |
-| `copy_schedule` | Copy-to-all, copy-to-workdays, copy-to-weekend buttons and day selector |
-| `clear_schedule` | Clear-day and clear-all buttons |
+| `edit_schedule` | Grid drag interactions, value input, and copy buttons |
 
 **Behavior:**
 - All permissions default to `true` — existing cards are unaffected

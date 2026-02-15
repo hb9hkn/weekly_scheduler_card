@@ -16,8 +16,6 @@ export class ScheduleToolbar extends LitElement {
   @property({ type: Object }) permissions: ResolvedPermissions = {
     schedule_toggle: true,
     edit_schedule: true,
-    copy_schedule: true,
-    clear_schedule: true,
   };
 
   @state() private _selectedDay: DayName = 'monday';
@@ -298,25 +296,6 @@ export class ScheduleToolbar extends LitElement {
     );
   }
 
-  private _handleClearDay() {
-    this.dispatchEvent(
-      new CustomEvent('clear-day', {
-        detail: { day: this._selectedDay },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  private _handleClearAll() {
-    this.dispatchEvent(
-      new CustomEvent('clear-all', {
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
   private _handleToggleEnabled() {
     this.dispatchEvent(
       new CustomEvent('toggle-enabled', {
@@ -349,9 +328,6 @@ export class ScheduleToolbar extends LitElement {
 
   render() {
     const p = this.permissions;
-    const showDaySelector = p.copy_schedule || p.clear_schedule;
-    const hasNextAfterToggle = p.edit_schedule || p.copy_schedule || p.clear_schedule;
-    const hasNextAfterValue = p.copy_schedule || p.clear_schedule;
 
     return html`
       <div class="toolbar">
@@ -370,7 +346,7 @@ export class ScheduleToolbar extends LitElement {
                 </label>
                 <span class="section-label">${this.enabled ? 'On' : 'Off'}</span>
               </div>
-              ${hasNextAfterToggle ? html`<div class="divider"></div>` : ''}
+              ${p.edit_schedule ? html`<div class="divider"></div>` : ''}
             `
           : ''}
 
@@ -388,15 +364,15 @@ export class ScheduleToolbar extends LitElement {
                   step="any"
                 />
               </div>
-              ${hasNextAfterValue ? html`<div class="divider"></div>` : ''}
+              <div class="divider"></div>
             `
           : ''}
 
-        <!-- Day selector (shared by copy and clear) -->
-        ${showDaySelector
+        <!-- Day selector and copy buttons (gated by edit_schedule) -->
+        ${p.edit_schedule
           ? html`
               <div class="section">
-                <span class="section-label">${p.copy_schedule ? 'Copy from:' : 'Day:'}</span>
+                <span class="section-label">Copy from:</span>
                 <select class="day-select" @change=${this._handleDayChange}>
                   ${DAYS.map(
                     (day) => html`
@@ -407,12 +383,7 @@ export class ScheduleToolbar extends LitElement {
                   )}
                 </select>
               </div>
-            `
-          : ''}
 
-        <!-- Copy buttons -->
-        ${p.copy_schedule
-          ? html`
               <div class="section">
                 <button class="btn btn-primary" @click=${this._handleCopyToAll}>
                   Copy to All
@@ -422,25 +393,6 @@ export class ScheduleToolbar extends LitElement {
                 </button>
                 <button class="btn btn-primary" @click=${this._handleCopyToWeekend}>
                   Copy to Weekend
-                </button>
-              </div>
-            `
-          : ''}
-
-        <!-- Divider between copy and clear -->
-        ${p.copy_schedule && p.clear_schedule
-          ? html`<div class="divider"></div>`
-          : ''}
-
-        <!-- Clear buttons -->
-        ${p.clear_schedule
-          ? html`
-              <div class="section">
-                <button class="btn btn-secondary" @click=${this._handleClearDay}>
-                  Clear ${DAY_LABELS[this._selectedDay]}
-                </button>
-                <button class="btn btn-secondary" @click=${this._handleClearAll}>
-                  Clear All
                 </button>
               </div>
             `

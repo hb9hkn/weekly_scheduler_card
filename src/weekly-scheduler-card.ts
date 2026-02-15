@@ -107,7 +107,7 @@ export class WeeklySchedulerCard extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this._mobileQuery = window.matchMedia('(max-width: 600px)');
+    this._mobileQuery = window.matchMedia('(hover: none) and (pointer: coarse)');
     this._isMobile = this._mobileQuery.matches;
     this._mobileQueryHandler = (e: MediaQueryListEvent) => {
       const wasMobile = this._isMobile;

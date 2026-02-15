@@ -73,6 +73,8 @@ export interface CardConfig {
   edit_schedule?: boolean; // grid drag + value input
   copy_schedule?: boolean; // copy buttons + day selector
   clear_schedule?: boolean; // clear buttons
+  // Edit mode protection (default: false)
+  require_edit_mode?: boolean; // require explicit toggle before editing
 }
 
 export interface ResolvedPermissions {

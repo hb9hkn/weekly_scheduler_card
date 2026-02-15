@@ -15,8 +15,8 @@ A Lovelace card for Home Assistant that provides an Outlook-style weekly calenda
 - **Intuitive Interactions**: Click and drag to add or remove schedule blocks
 - **Helper Entity Dropdown**: Select any `input_number` or `input_boolean` helper directly in the card editor
 - **Automatic Schedule Creation**: Creates schedules automatically when selecting a new helper
-- **Copy Functions**: Copy schedules to all days, workdays only, or weekends
-- **Value Input**: Set specific values for `input_number` schedules
+- **Copy Functions**: Copy a day's schedule to all days, workdays only, or weekends
+- **Value Input**: Set specific values for `input_number` schedules (applied live as you type)
 - **Enable/Disable Toggle**: Turn schedules on/off without losing configuration
 - **Granular Permissions**: Control which actions are available per card instance (ideal for admin vs. regular user dashboards)
 - **Mobile Edit Mode**: Prevents accidental schedule changes on mobile with an explicit edit toggle and 30-second auto-lock
@@ -57,6 +57,7 @@ resources:
 3. Search for "Weekly Scheduler Card"
 4. Select a helper entity from the dropdown
 5. Optionally set a custom title
+6. Configure permissions using the checkboxes (all enabled by default)
 
 ### Manual YAML Configuration
 
@@ -80,7 +81,7 @@ title: Bedroom Temperature Schedule
 
 ### Example Configurations
 
-**For an input_number helper:**
+**Full access (default) — for admin dashboards:**
 ```yaml
 type: custom:weekly-scheduler-card
 helper_entity: input_number.thermostat_setpoint
@@ -94,20 +95,20 @@ helper_entity: input_boolean.guest_mode
 title: Guest Mode Schedule
 ```
 
-**Read-only view (e.g. for a regular user dashboard):**
-```yaml
-type: custom:weekly-scheduler-card
-helper_entity: input_number.thermostat_setpoint
-title: Thermostat Schedule
-schedule_toggle: false
-edit_schedule: false
-```
-
 **Allow toggling on/off, but no editing:**
 ```yaml
 type: custom:weekly-scheduler-card
 helper_entity: input_number.thermostat_setpoint
 title: Thermostat Schedule
+edit_schedule: false
+```
+
+**Complete read-only view — for regular user dashboards:**
+```yaml
+type: custom:weekly-scheduler-card
+helper_entity: input_number.thermostat_setpoint
+title: Thermostat Schedule
+schedule_toggle: false
 edit_schedule: false
 ```
 
@@ -122,8 +123,8 @@ title: Thermostat Schedule
 
 ### Adding Time Blocks
 
-1. For `input_number` schedules, set the desired value using the slider in the toolbar
-2. Click and drag on empty cells to create a block
+1. For `input_number` schedules, type the desired value in the **Value** field in the toolbar (the value is applied live as you type — no need to click away or press Enter)
+2. Click and drag on empty cells to create a block with that value
 3. Release to confirm the selection
 
 ### Modifying Time Blocks
@@ -133,54 +134,85 @@ title: Thermostat Schedule
 
 ### Copy Schedule
 
-Use the toolbar buttons to copy schedules:
-- **Copy to All**: Copy selected day's schedule to all 7 days
-- **Copy to Workdays**: Copy to Monday through Friday
-- **Copy to Weekend**: Copy to Saturday and Sunday
+Use the toolbar to copy one day's schedule to other days:
+
+1. Select the **source day** from the "Copy from" dropdown
+2. Click one of the copy buttons:
+   - **Copy to All**: Copy to all 7 days
+   - **Copy to Workdays**: Copy to Monday through Friday
+   - **Copy to Weekend**: Copy to Saturday and Sunday
 
 ### Enable/Disable Schedule
 
-- Use the toggle switch in the header to enable or disable the schedule
-- When disabled, the schedule configuration is preserved but not applied
+- Use the toggle switch to enable or disable the schedule
+- When disabled, the schedule configuration is preserved but not applied by the backend
+- On desktop, the toggle appears in the toolbar
+- On mobile, the toggle appears in the top bar (alongside Edit Mode) for easy access
+
+### Default Values
+
+- `input_number` schedules: time slots without a block default to **0**
+- `input_boolean` schedules: time slots without a block default to **OFF**
 
 ## Permissions
 
 Permissions let you control which actions are available on each card instance. This is useful for creating separate dashboards for admin and regular users without needing Home Assistant user role detection.
 
-The two permission groups are:
+### Permission Groups
 
-| Permission | Controls |
-|------------|----------|
-| `schedule_toggle` | The on/off switch for the schedule |
-| `edit_schedule` | Grid drag interactions, value input, and copy buttons |
+| Permission | Default | Controls |
+|------------|---------|----------|
+| `schedule_toggle` | `true` | The on/off switch for the schedule |
+| `edit_schedule` | `true` | Grid drag interactions, value input, and copy buttons |
 
-**Behavior:**
-- All permissions default to `true` — existing cards are unaffected
-- When a permission is disabled, those controls are hidden (not greyed out)
-- When all permissions are disabled, the toolbar is hidden entirely and the grid is non-interactive, creating a clean read-only view
-- Permissions can be configured via the card editor UI (checkboxes) or in YAML
+### Behavior
 
-### Setting up admin vs. regular user dashboards
+- All permissions default to `true` — existing cards without permission fields are unaffected
+- When a permission is disabled, those controls are **hidden** (not greyed out)
+- When both permissions are disabled, the toolbar is hidden entirely and the grid is non-interactive, creating a clean read-only visualization
+- Permissions can be configured via the **card editor UI** (checkboxes) or in **YAML**
 
-1. Create a dashboard/view for admin users with a full-access card (default config)
-2. Create a separate dashboard/view for regular users with a restricted card (permissions set to `false`)
-3. Assign dashboard visibility per user in Home Assistant
+### Setting Up Admin vs. Regular User Dashboards
+
+1. Create a dashboard/view for **admin users** with a full-access card (default config — no permission fields needed)
+2. Create a separate dashboard/view for **regular users** with a restricted card:
+   ```yaml
+   type: custom:weekly-scheduler-card
+   helper_entity: input_number.thermostat_setpoint
+   schedule_toggle: false
+   edit_schedule: false
+   ```
+3. Assign dashboard visibility per user in Home Assistant (**Settings > Dashboards**)
 
 ## Mobile Edit Mode
 
-On mobile screens (viewport width < 600px), an **Edit Mode** toggle automatically appears above the toolbar. This prevents accidental schedule changes from touch interactions.
+On mobile screens (viewport width < 600px), the card activates a safety mode to prevent accidental schedule changes from touch interactions.
 
-- **Edit Mode OFF** (default): The schedule grid is non-interactive and the toolbar is hidden. The card displays the schedule as a read-only visualization.
-- **Edit Mode ON**: The permitted controls appear and the grid becomes interactive (if `edit_schedule` is enabled).
-- **Auto-lock**: After 30 seconds of no interaction, edit mode silently turns off automatically.
-- The auto-lock timer resets on any touch, click, or input within the card.
-- On desktop screens (viewport >= 600px), there is no edit mode toggle — permitted controls are always visible.
+### How It Works
+
+- **Edit Mode OFF** (default): The schedule grid is non-interactive. The card displays the schedule as a read-only visualization. If `schedule_toggle` is permitted, the on/off switch remains accessible in the top bar.
+- **Edit Mode ON**: The toolbar appears and the grid becomes interactive (if `edit_schedule` is enabled). You can drag to create/modify time blocks, change values, and copy schedules.
+- **Auto-lock**: After **30 seconds** of no interaction, edit mode silently turns off automatically to prevent accidental changes.
+- The auto-lock timer **resets** on any touch, click, or input within the card.
+
+### What Appears on Mobile
+
+| Permissions | Top Bar Shows | Toolbar |
+|-------------|---------------|---------|
+| Both enabled | Schedule On/Off + Edit Mode toggle | Shown when Edit Mode is ON |
+| Only `schedule_toggle` | Schedule On/Off only | Hidden |
+| Only `edit_schedule` | Edit Mode toggle only | Shown when Edit Mode is ON |
+| Both disabled | Nothing (bar hidden) | Hidden |
+
+### Desktop Behavior
+
+On desktop screens (viewport >= 600px), there is no edit mode toggle — all permitted controls are always visible and the grid is always interactive (if `edit_schedule` is enabled).
 
 ## Creating a New Schedule
 
 If you select a helper entity that doesn't have a schedule yet:
 
-1. The card will show a "Create Schedule" button
+1. The card will show a **Create Schedule** button
 2. Click the button to create a new schedule for that helper
 3. A new switch entity will be created (e.g., `switch.weekly_schedule_bedroom_temperature`)
 4. You can then start adding time blocks
@@ -200,6 +232,10 @@ The card includes automatic version mismatch detection and will reload the page 
 Ensure you have `input_number` or `input_boolean` helpers created in Home Assistant:
 - Go to **Settings** > **Devices & Services** > **Helpers**
 - Create a new Number or Toggle helper
+
+### Edit Mode not appearing on mobile
+
+The Edit Mode toggle only appears when the browser viewport width is less than 600px. If you're on a tablet in landscape mode, the viewport may be wider than 600px and desktop mode applies instead.
 
 ## License
 

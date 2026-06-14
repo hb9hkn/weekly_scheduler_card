@@ -17,6 +17,7 @@ A Lovelace card for Home Assistant that provides an Outlook-style weekly calenda
 - **Automatic Schedule Creation**: Creates schedules automatically when selecting a new helper
 - **Copy Functions**: Copy a day's schedule to all days, workdays only, or weekends
 - **Value Input**: Set specific values for `input_number` schedules (applied live as you type)
+- **Color-Coded Values**: `input_number` cells are colored along a full color wheel based on their value — blue (low) through green, yellow, orange, red to violet (high)
 - **Enable/Disable Toggle**: Turn schedules on/off without losing configuration
 - **Granular Permissions**: Control which actions are available per card instance (ideal for admin vs. regular user dashboards)
 - **Mobile Edit Mode**: Prevents accidental schedule changes on mobile with an explicit edit toggle and 30-second auto-lock
@@ -76,6 +77,8 @@ title: Bedroom Temperature Schedule
 | `title` | string | No | Entity name | Card title displayed in the header |
 | `schedule_toggle` | boolean | No | `true` | Show the enable/disable schedule toggle |
 | `edit_schedule` | boolean | No | `true` | Allow grid interactions, value input, and copy buttons |
+| `min_value` | number | No | Schedule min | Override the low end of the color scale for `input_number` cells |
+| `max_value` | number | No | Schedule max | Override the high end of the color scale for `input_number` cells |
 
 *Either `helper_entity` (recommended) or `entity` (legacy) is required.
 
@@ -118,6 +121,35 @@ type: custom:weekly-scheduler-card
 entity: switch.weekly_schedule_thermostat_setpoint
 title: Thermostat Schedule
 ```
+
+**Fixed color scale (e.g. temperature 15–30 °C):**
+```yaml
+type: custom:weekly-scheduler-card
+helper_entity: input_number.thermostat_setpoint
+title: Thermostat Schedule
+min_value: 15
+max_value: 30
+```
+
+## Color Coding (Numerical Schedules)
+
+For `input_number` schedules each time block is colored according to its value's position within the value range, following the color wheel:
+
+| Position in range | Color |
+|-------------------|-------|
+| Low | Blue |
+| ↓ | Cyan |
+| ↓ | Green |
+| ↓ | Yellow |
+| ↓ | Orange |
+| ↓ | Red |
+| High | Violet |
+
+**Dynamic range (default):** The color scale is derived automatically from the minimum and maximum values currently present in the schedule. As you add or change blocks, colors update to reflect the new range.
+
+**Fixed range:** Use `min_value` and `max_value` in the card config to pin the color scale to a known range (e.g. 15–30 for a temperature schedule). This keeps colors consistent regardless of which values are currently scheduled.
+
+`input_boolean` schedules use fixed colors (green = ON, orange = OFF) and are unaffected by this setting.
 
 ## Interactions
 

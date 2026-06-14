@@ -71,6 +71,9 @@ export interface CardConfig {
   // Permissions (all default to true for backward compatibility)
   schedule_toggle?: boolean; // enable/disable switch
   edit_schedule?: boolean; // grid drag, value input, and copy buttons
+  // Color scale overrides for input_number cells
+  min_value?: number;
+  max_value?: number;
 }
 
 export interface ResolvedPermissions {

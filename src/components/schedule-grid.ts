@@ -48,6 +48,9 @@ export class ScheduleGrid extends LitElement {
 
   @property({ type: Boolean }) editable: boolean = true;
 
+  @property({ type: Number }) minValue?: number;
+  @property({ type: Number }) maxValue?: number;
+
   @state() private _selection: SelectionState = createSelectionState();
   @state() private _currentSlot: number = getCurrentSlot();
   @state() private _currentDay: DayName = getCurrentDay();
@@ -143,18 +146,6 @@ export class ScheduleGrid extends LitElement {
       background: var(--cell-active);
     }
 
-    .cell.active.intensity-low {
-      background: #a5c9e2;
-    }
-
-    .cell.active.intensity-medium {
-      background: #7ab3d6;
-    }
-
-    .cell.active.intensity-high {
-      background: var(--cell-active);
-    }
-
     .cell.active.boolean-off {
       background: #e88a5c;
     }
@@ -216,14 +207,6 @@ export class ScheduleGrid extends LitElement {
 
     .grid-container.read-only .cell.active:hover {
       background: var(--cell-active);
-    }
-
-    .grid-container.read-only .cell.active.intensity-low:hover {
-      background: #a5c9e2;
-    }
-
-    .grid-container.read-only .cell.active.intensity-medium:hover {
-      background: #7ab3d6;
     }
 
     .grid-container.read-only .cell.active.boolean-off:hover {
@@ -373,14 +356,33 @@ export class ScheduleGrid extends LitElement {
     );
   }
 
-  private _getIntensityClass(value: number | boolean | null): string {
-    if (value === null) return '';
-    if (typeof value === 'boolean') return value ? 'boolean-on' : 'boolean-off';
+  private _getBooleanClass(value: boolean): string {
+    return value ? 'boolean-on' : 'boolean-off';
+  }
 
-    // For numbers, calculate intensity based on 0-100 range
-    if (value <= 33) return 'intensity-low';
-    if (value <= 66) return 'intensity-medium';
-    return 'intensity-high';
+  private _computeValueRange(): { min: number; max: number } {
+    const values: number[] = [];
+    for (const day of Object.values(this.schedule)) {
+      for (const block of day) {
+        if (typeof block.value === 'number') {
+          values.push(block.value);
+        }
+      }
+    }
+    if (values.length === 0) return { min: 0, max: 100 };
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    if (min === max) return { min, max: min + 1 };
+    return { min, max };
+  }
+
+  private _getColorForValue(value: number, range: { min: number; max: number }): string {
+    const effectiveMin = this.minValue ?? range.min;
+    const effectiveMax = this.maxValue ?? range.max;
+    if (effectiveMin === effectiveMax) return 'hsl(240, 70%, 50%)';
+    const normalized = Math.max(0, Math.min(1, (value - effectiveMin) / (effectiveMax - effectiveMin)));
+    const hue = 240 - normalized * 300;
+    return `hsl(${hue}, 70%, 50%)`;
   }
 
   private _formatValue(value: number): string {
@@ -405,35 +407,42 @@ export class ScheduleGrid extends LitElement {
     `;
   }
 
-  private _renderCell(day: DayName, slot: number) {
+  private _renderCell(day: DayName, slot: number, range: { min: number; max: number }) {
     const value = getValueAtSlot(this.schedule, day, slot);
     const isActive = value !== null;
     const isSelected = isCellSelected(this._selection, day, slot);
     const isNowRow = day === this._currentDay && slot === this._currentSlot;
 
+    const isNumber = isActive && this.helperType === 'input_number' && typeof value === 'number';
+    const isBoolean = isActive && this.helperType === 'input_boolean' && typeof value === 'boolean';
+
     const classes = [
       'cell',
       isActive ? 'active' : '',
-      isActive ? this._getIntensityClass(value) : '',
+      isBoolean ? this._getBooleanClass(value as boolean) : '',
       isSelected ? 'selected' : '',
       isNowRow ? 'now-row' : '',
     ]
       .filter(Boolean)
       .join(' ');
 
+    const inlineStyle = isNumber
+      ? `background-color: ${this._getColorForValue(value as number, range)}`
+      : '';
+
     return html`
-      <div class="${classes}" data-day="${day}" data-slot="${slot}">
+      <div class="${classes}" style="${inlineStyle}" data-day="${day}" data-slot="${slot}">
         ${isNowRow
           ? html`<div
               class="now-indicator"
               style="top: ${this._slotProgress * 100}%"
             ></div>`
           : ''}
-        ${isActive && this.helperType === 'input_number' && typeof value === 'number'
-          ? html`<span class="cell-value">${this._formatValue(value)}</span>`
+        ${isNumber
+          ? html`<span class="cell-value">${this._formatValue(value as number)}</span>`
           : ''}
-        ${isActive && this.helperType === 'input_boolean' && typeof value === 'boolean'
-          ? html`<span class="cell-value">${value ? 'ON' : 'OFF'}</span>`
+        ${isBoolean
+          ? html`<span class="cell-value">${(value as boolean) ? 'ON' : 'OFF'}</span>`
           : ''}
       </div>
     `;
@@ -441,6 +450,7 @@ export class ScheduleGrid extends LitElement {
 
   render() {
     const slots = Array.from({ length: 48 }, (_, i) => i);
+    const range = this._computeValueRange();
 
     return html`
       <div
@@ -466,7 +476,7 @@ export class ScheduleGrid extends LitElement {
         ${slots.map(
           (slot) => html`
             ${this._renderTimeLabel(slot)}
-            ${DAYS.map((day) => this._renderCell(day, slot))}
+            ${DAYS.map((day) => this._renderCell(day, slot, range))}
           `
         )}
       </div>

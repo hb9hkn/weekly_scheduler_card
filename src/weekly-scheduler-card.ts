@@ -3,7 +3,7 @@
  * @version 0.3.4
  */
 
-export const CARD_VERSION = '0.5.0-beta.4';
+export const CARD_VERSION = '0.5.1';
 
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -724,6 +724,8 @@ export class WeeklySchedulerCard extends LitElement {
             .helperType=${this._helperType}
             .defaultValue=${this._defaultValue}
             .editable=${gridEditable}
+            .minValue=${this.config?.min_value}
+            .maxValue=${this.config?.max_value}
             @selection-complete=${this._handleSelectionComplete}
           ></schedule-grid>
         </div>
